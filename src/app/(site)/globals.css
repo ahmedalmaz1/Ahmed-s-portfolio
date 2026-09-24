@@ -2,6 +2,7 @@
 
 @theme {
   --color-bg: #051317;
+  /* --color-bg: #020514; */
   --color-surface: #0b2830;
   --color-line: #1d4a52;
   --color-ink: #e4efea;
@@ -97,4 +98,19 @@
       transition-duration: 0.01ms !important;
     }
   }
+}
+.frame {
+  --frame-color: var(--color-line);
+  --frame-seg: 30%; /* length of each top/bottom segment */
+
+  border-inline: 1px solid var(--frame-color);
+  background:
+    linear-gradient(var(--frame-color), var(--frame-color)) top left /
+      var(--frame-seg) 1px no-repeat,
+    linear-gradient(var(--frame-color), var(--frame-color)) top right /
+      var(--frame-seg) 1px no-repeat,
+    linear-gradient(var(--frame-color), var(--frame-color)) bottom left /
+      var(--frame-seg) 1px no-repeat,
+    linear-gradient(var(--frame-color), var(--frame-color)) bottom right /
+      var(--frame-seg) 1px no-repeat;
 }
