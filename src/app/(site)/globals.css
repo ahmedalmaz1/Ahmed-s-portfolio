@@ -23,6 +23,10 @@
   --animate-settle: settle 0.8s ease both;
 }
 
+:root {
+  --footer-h: 72px;
+}
+
 @keyframes wipe {
   from {
     clip-path: inset(-0.2em 100% -0.2em -0.2em);

@@ -1,7 +1,7 @@
 import dynamic from "next/dynamic";
 import { Syne, Instrument_Sans } from "next/font/google";
 const ToastProvider = dynamic(() => import("@/providers/ToastProvider"));
-const Footer = dynamic(() => import("@/components/Footer"));
+const Footer = dynamic(() => import("@/components/layout/Footer"));
 
 import "./globals.css";
 
