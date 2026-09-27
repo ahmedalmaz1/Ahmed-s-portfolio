@@ -1,168 +1,146 @@
 "use client";
 import { useEffect, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 
-const PARTICLE_COUNT = 46;
-const LINK_DISTANCE = 140;
-const MOUSE_RADIUS = 160;
+gsap.registerPlugin(ScrollTrigger, useGSAP);
+
+// each line lives at its own depth (z) so the mouse tilt visibly separates them
+const LINES = [
+  { top: "10%", rotate: -10, z: -120, driftSpeed: 55, opacity: 0.3 },
+  { top: "28%", rotate: 7, z: -220, driftSpeed: -45, opacity: 0.2 },
+  { top: "48%", rotate: -6, z: -60, driftSpeed: 80, opacity: 0.35 },
+  { top: "68%", rotate: 12, z: -180, driftSpeed: -60, opacity: 0.22 },
+  { top: "86%", rotate: -8, z: -140, driftSpeed: 40, opacity: 0.2 },
+];
+
+const NODES = [
+  { top: "16%", left: "22%", z: 40 },
+  { top: "34%", left: "78%", z: -60 },
+  { top: "52%", left: "12%", z: 80 },
+  { top: "70%", left: "65%", z: -30 },
+  { top: "88%", left: "35%", z: 60 },
+  { top: "22%", left: "50%", z: -90 },
+];
 
 export default function ProjectsBackground({ targetRef }) {
-  const canvasRef = useRef(null);
-  const particlesRef = useRef([]);
-  const mouseRef = useRef({ x: -9999, y: -9999 });
-  const rafRef = useRef();
-  const sizeRef = useRef({ w: 0, h: 0, dpr: 1 });
+  const groupRef = useRef(null);
+  const lineRefs = useRef([]);
+  const nodeRefs = useRef([]);
+  const tiltMove = useRef(null);
+  const idleTl = useRef(null);
+
+  useGSAP(
+    () => {
+      if (!targetRef.current) return;
+      const mm = gsap.matchMedia();
+
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        // place lines/nodes at their depth immediately
+        lineRefs.current.forEach((el, i) => {
+          if (el) gsap.set(el, { z: LINES[i].z });
+        });
+        nodeRefs.current.forEach((el, i) => {
+          if (el) gsap.set(el, { z: NODES[i].z });
+        });
+
+        // slow, continuous idle drift so it's alive with no input at all
+        idleTl.current = gsap.timeline({ repeat: -1, yoyo: true });
+        lineRefs.current.forEach((el, i) => {
+          if (!el) return;
+          idleTl.current.to(
+            el,
+            {
+              xPercent: `+=${LINES[i].driftSpeed * 0.4}`,
+              duration: 8 + i,
+              ease: "sine.inOut",
+            },
+            i * 0.3,
+          );
+        });
+        nodeRefs.current.forEach((el, i) => {
+          if (!el) return;
+          idleTl.current.to(
+            el,
+            {
+              y: (i % 2 === 0 ? -1 : 1) * 18,
+              duration: 6 + i * 0.7,
+              ease: "sine.inOut",
+            },
+            i * 0.25,
+          );
+        });
+
+        // scroll: additional horizontal drift + whole-field tilt
+        gsap.fromTo(
+          groupRef.current,
+          { rotateX: 8, rotateZ: -2 },
+          {
+            rotateX: -8,
+            rotateZ: 2,
+            ease: "none",
+            scrollTrigger: {
+              trigger: targetRef.current,
+              start: "top bottom",
+              end: "bottom top",
+              scrub: 0.8,
+            },
+          },
+        );
+        lineRefs.current.forEach((el, i) => {
+          if (!el) return;
+          gsap.to(el, {
+            xPercent: `+=${LINES[i].driftSpeed}`,
+            ease: "none",
+            scrollTrigger: {
+              trigger: targetRef.current,
+              start: "top bottom",
+              end: "bottom top",
+              scrub: 0.8,
+            },
+          });
+        });
+
+        // continuous mouse-driven 3D tilt on the whole scene (the main "3D" feel)
+        tiltMove.current = {
+          rotateX: gsap.quickTo(groupRef.current, "rotateX", {
+            duration: 0.9,
+            ease: "power3",
+          }),
+          rotateY: gsap.quickTo(groupRef.current, "rotateY", {
+            duration: 0.9,
+            ease: "power3",
+          }),
+        };
+      });
+    },
+    { scope: groupRef, dependencies: [targetRef] },
+  );
 
   useEffect(() => {
-    const canvas = canvasRef.current;
     const section = targetRef.current;
-    if (!canvas || !section) return;
-
-    const ctx = canvas.getContext("2d");
-    const reduce = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-
-    const styles = getComputedStyle(document.documentElement);
-    const lineColor =
-      styles.getPropertyValue("--color-line").trim() || "#1D4A52";
-    const accentColor =
-      styles.getPropertyValue("--color-accent").trim() || "#F0B341";
-
-    const resize = () => {
-      const rect = section.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      sizeRef.current = { w: rect.width, h: rect.height, dpr };
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${rect.height}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-
-    const makeParticles = () => {
-      const { w, h } = sizeRef.current;
-      particlesRef.current = Array.from({ length: PARTICLE_COUNT }, () => ({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        vx: (Math.random() - 0.5) * 0.25,
-        vy: (Math.random() - 0.5) * 0.25,
-        r: Math.random() * 1.6 + 0.8,
-      }));
-    };
-
-    resize();
-    makeParticles();
-
-    const ro = new ResizeObserver(() => {
-      resize();
-    });
-    ro.observe(section);
+    if (!section) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const onMove = (e) => {
+      if (!tiltMove.current) return;
       const rect = section.getBoundingClientRect();
-      mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      const px = (e.clientX - rect.left) / rect.width - 0.5; // -0.5..0.5
+      const py = (e.clientY - rect.top) / rect.height - 0.5;
+
+      // tilt the whole 3D field toward the cursor
+      tiltMove.current.rotateY(px * 14);
+      tiltMove.current.rotateX(-py * 10);
     };
     const onLeave = () => {
-      mouseRef.current = { x: -9999, y: -9999 };
+      tiltMove.current?.rotateX(0);
+      tiltMove.current?.rotateY(0);
     };
+
     section.addEventListener("mousemove", onMove);
     section.addEventListener("mouseleave", onLeave);
-
-    let visible = true;
-    const io = new IntersectionObserver(
-      ([entry]) => (visible = entry.isIntersecting),
-      { threshold: 0 },
-    );
-    io.observe(section);
-
-    const tick = () => {
-      const { w, h } = sizeRef.current;
-      const particles = particlesRef.current;
-      const mouse = mouseRef.current;
-
-      if (visible) {
-        ctx.clearRect(0, 0, w, h);
-
-        // move + draw particles
-        particles.forEach((p) => {
-          p.x += p.vx;
-          p.y += p.vy;
-          if (p.x < 0 || p.x > w) p.vx *= -1;
-          if (p.y < 0 || p.y > h) p.vy *= -1;
-
-          // gentle push away from the cursor
-          const dx = p.x - mouse.x;
-          const dy = p.y - mouse.y;
-          const dist = Math.hypot(dx, dy);
-          if (dist < MOUSE_RADIUS) {
-            const force = (1 - dist / MOUSE_RADIUS) * 0.6;
-            p.vx += (dx / (dist || 1)) * force * 0.05;
-            p.vy += (dy / (dist || 1)) * force * 0.05;
-          }
-          // gentle speed cap so it never runs away
-          const speed = Math.hypot(p.vx, p.vy);
-          const max = 0.6;
-          if (speed > max) {
-            p.vx = (p.vx / speed) * max;
-            p.vy = (p.vy / speed) * max;
-          }
-
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fillStyle = accentColor;
-          ctx.globalAlpha = 0.7;
-          ctx.fill();
-          ctx.globalAlpha = 1;
-        });
-
-        // connecting lines between nearby particles
-        for (let i = 0; i < particles.length; i++) {
-          for (let j = i + 1; j < particles.length; j++) {
-            const a = particles[i];
-            const b = particles[j];
-            const dist = Math.hypot(a.x - b.x, a.y - b.y);
-            if (dist < LINK_DISTANCE) {
-              ctx.beginPath();
-              ctx.moveTo(a.x, a.y);
-              ctx.lineTo(b.x, b.y);
-              ctx.strokeStyle = lineColor;
-              ctx.globalAlpha = (1 - dist / LINK_DISTANCE) * 0.5;
-              ctx.lineWidth = 1;
-              ctx.stroke();
-              ctx.globalAlpha = 1;
-            }
-          }
-        }
-
-        // lines from particles to the cursor
-        particles.forEach((p) => {
-          const dist = Math.hypot(p.x - mouse.x, p.y - mouse.y);
-          if (dist < MOUSE_RADIUS) {
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(mouse.x, mouse.y);
-            ctx.strokeStyle = accentColor;
-            ctx.globalAlpha = (1 - dist / MOUSE_RADIUS) * 0.4;
-            ctx.lineWidth = 1;
-            ctx.stroke();
-            ctx.globalAlpha = 1;
-          }
-        });
-      }
-
-      if (!reduce) rafRef.current = requestAnimationFrame(tick);
-    };
-
-    if (!reduce) {
-      rafRef.current = requestAnimationFrame(tick);
-    } else {
-      tick(); // draw one static frame for reduced-motion users
-    }
-
     return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      ro.disconnect();
-      io.disconnect();
       section.removeEventListener("mousemove", onMove);
       section.removeEventListener("mouseleave", onLeave);
     };
@@ -172,8 +150,44 @@ export default function ProjectsBackground({ targetRef }) {
     <div
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+      style={{ perspective: "1000px" }}
     >
-      <canvas ref={canvasRef} className="absolute inset-0" />
+      <div
+        ref={groupRef}
+        className="absolute inset-[-15%]"
+        style={{ transformStyle: "preserve-3d" }}
+      >
+        {LINES.map((line, i) => (
+          <div
+            key={i}
+            ref={(el) => (lineRefs.current[i] = el)}
+            className="absolute h-px w-[160%]"
+            style={{
+              top: line.top,
+              left: "-30%",
+              transform: `rotate(${line.rotate}deg)`,
+              background:
+                "linear-gradient(90deg, transparent, var(--color-line) 30%, var(--color-accent) 50%, var(--color-line) 70%, transparent)",
+              opacity: line.opacity,
+            }}
+          />
+        ))}
+
+        {NODES.map((node, i) => (
+          <span
+            key={i}
+            ref={(el) => (nodeRefs.current[i] = el)}
+            className="absolute h-2 w-2 rounded-full bg-accent"
+            style={{
+              top: node.top,
+              left: node.left,
+              opacity: 0.75,
+              boxShadow: "0 0 16px 3px var(--color-accent)",
+            }}
+          />
+        ))}
+      </div>
+
       <div
         className="absolute inset-0 opacity-10 mix-blend-overlay"
         style={{ backgroundImage: "var(--grain)" }}

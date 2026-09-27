@@ -61,8 +61,7 @@ export default function Nav() {
             onClick={() => setIsOpen(false)}
             className="pointer-events-auto flex h-11 items-center text-ink2 font-display font-bold"
           >
-            <span className="text-[8px] font-thin">Ahmed </span>
-            <span className="text-md font-bold md:text-lg">Almaz</span>
+            AA
           </a>
 
           {/* desktop nav (unchanged) */}

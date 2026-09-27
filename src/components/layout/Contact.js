@@ -67,7 +67,7 @@ export default function Contact() {
       <div
         ref={curtainRef}
         aria-hidden="true"
-        className="absolute inset-0 z-20 bg-bg motion-reduce:hidden"
+        className="absolute inset-0 z-20 bg-black motion-reduce:hidden"
       />
 
       <div className="relative mx-auto grid max-w-[1240px] grid-cols-1 gap-8 md:grid-cols-[5fr_7fr] md:gap-16">

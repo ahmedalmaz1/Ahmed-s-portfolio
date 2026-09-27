@@ -69,7 +69,7 @@ export default function Portrait() {
         className="group relative aspect-[3/4] cursor-crosshair overflow-hidden rounded-md border border-line bg-surface"
       >
         <Image
-          src="/selena.jpg"
+          src="/user.webp"
           alt="Portrait of Ahmed Almaz"
           fill
           priority
