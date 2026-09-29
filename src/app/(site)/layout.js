@@ -1,22 +1,19 @@
 import dynamic from "next/dynamic";
-import { Syne, Instrument_Sans } from "next/font/google";
+import { Inter_Tight, DM_Sans } from "next/font/google";
 const ToastProvider = dynamic(() => import("@/providers/ToastProvider"));
 const Footer = dynamic(() => import("@/components/layout/Footer"));
 
 import "./globals.css";
 
-const display = Syne({
+const display = Inter_Tight({
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  weight: ["600", "700"],
   variable: "--font-display",
-  display: "swap",
 });
 
-const body = Instrument_Sans({
+const body = DM_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
   variable: "--font-body",
-  display: "swap",
 });
 
 export const metadata = {

@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useFrame } from '@react-three/fiber';
-import { useMemo } from 'react';
-import * as THREE from 'three';
-import { heightAt } from '@/lib/terrainMath';
+import { useFrame } from "@react-three/fiber";
+import { useMemo } from "react";
+import * as THREE from "three";
+import { heightAt } from "@/lib/terrainMath";
 
 const SEGMENTS = 160;
 const SIZE = 250;
-const BG = '#051317';
+const BG = "#05090d";
 
 const VERTEX_SHADER = /* glsl */ `
   varying float vDepth;
@@ -69,7 +69,7 @@ export default function Terrain({ cursorRef }) {
       }
     }
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', geometry.attributes.position);
+    geo.setAttribute("position", geometry.attributes.position);
     geo.setIndex(indices);
     return geo;
   }, [geometry]);
@@ -79,9 +79,9 @@ export default function Terrain({ cursorRef }) {
       new THREE.ShaderMaterial({
         uniforms: {
           uBg: { value: new THREE.Color(BG) },
-          uLow: { value: new THREE.Color(0x184a52) },
-          uHigh: { value: new THREE.Color(0x86c9c0) },
-          uAccent: { value: new THREE.Color(0xf0b341) },
+          uLow: { value: new THREE.Color("#10212E") },
+          uHigh: { value: new THREE.Color("#8fa3b3") },
+          uAccent: { value: new THREE.Color("#c2cfdb") },
           uCursor: { value: new THREE.Vector2(0, 0) },
           uFog: { value: 0.0125 },
           uTime: { value: 0 },
@@ -89,7 +89,7 @@ export default function Terrain({ cursorRef }) {
         vertexShader: VERTEX_SHADER,
         fragmentShader: FRAGMENT_SHADER,
       }),
-    []
+    [],
   );
 
   useFrame((state) => {
@@ -99,9 +99,13 @@ export default function Terrain({ cursorRef }) {
 
   return (
     <>
-      {/* Occludes lines behind ridges so distant grid lines don't show through the terrain. */}
       <mesh geometry={geometry}>
-        <meshBasicMaterial color={BG} polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
+        <meshBasicMaterial
+          color={BG}
+          polygonOffset
+          polygonOffsetFactor={1}
+          polygonOffsetUnits={1}
+        />
       </mesh>
       <lineSegments geometry={lineGeometry} material={material} />
     </>

@@ -58,8 +58,7 @@ export default function Nav() {
           <a
             href="#top"
             aria-label="Ahmed Almaz, back to top"
-            onClick={() => setIsOpen(false)}
-            className="pointer-events-auto flex h-11 items-center text-ink2 font-display font-bold"
+            className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full border border-line bg-bg/60 font-display text-sm font-bold backdrop-blur-md"
           >
             AA
           </a>
