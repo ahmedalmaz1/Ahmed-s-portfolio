@@ -1,9 +1,12 @@
+import dynamic from "next/dynamic";
+const AboutEmbers = dynamic(() => import("../AboutEmbers"));
 export default function About() {
   return (
     <section
       id="about"
-      className="relative z-0 flex min-h-svh items-center overflow-x-clip"
+      className="relative isolate  z-0 flex min-h-svh items-center overflow-x-clip"
     >
+      <AboutEmbers />
       <div className="mx-auto grid w-full max-w-[1240px] grid-cols-1 items-center gap-8 px-5 py-[clamp(88px,12vw,150px)] sm:px-8 md:grid-cols-[0.85fr_1.15fr] md:gap-16 md:px-16">
         <div
           id="about-portrait-slot"

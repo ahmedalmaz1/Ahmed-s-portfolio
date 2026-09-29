@@ -3,12 +3,12 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { scrollFx } from "../scrollFx";
 
 const COUNT = 2400;
 const RADIUS = 220;
 const BAND_SHARE = 0.3;
 
-// المجموع = 1.0
 const COLORS = [
   { c: "#ffffff", w: 0.55 },
   { c: "#4D8195", w: 0.18 },
@@ -36,8 +36,9 @@ const vertexShader = /* glsl */ `
   uniform float uPixelRatio;
   uniform float uAspect;
   uniform vec2 uMouse;
-  uniform vec2 uDrag;
   uniform float uStrength;
+  uniform float uPull;
+  uniform vec2 uTarget;
   varying vec3 vColor;
   varying float vTwinkle;
 
@@ -54,11 +55,24 @@ const vertexShader = /* glsl */ `
     // منطقة التأثير حول المؤشر (جاوسية ناعمة)
     vec2 d = ndc - uMouse;
     d.x *= uAspect;
-    float sigma = 0.3;
+    float sigma = 0.35;
     float g = exp(-dot(d, d) / (sigma * sigma));
 
+    // انجذاب خفيف نحو المؤشر، ينعدم في المركز وعند الأطراف
     float depth = 0.6 + aSize / 8.0;
-    ndc += uDrag * g * uStrength * depth;
+    vec2 pull = -d * g * 0.25 * uStrength * depth;
+    pull.x /= uAspect;
+    ndc += pull;
+
+    // سحب الفلاي فلايز نحو الصورة أثناء الانتقال إلى About.
+    // عند uPull = 0 لا يتغير أي شيء، فمواضعها في الـ landing كما هي.
+    // الأقرب للصورة يتحرك أولاً، فيظهر السحب كموجة ناعمة.
+    vec2 toT = (ndc - uTarget) * vec2(uAspect, 1.0);
+    float delay = clamp(length(toT) * 0.25, 0.0, 0.4) + fract(aPhase * 0.318) * 0.1;
+    float k = clamp((uPull - delay) / 0.5, 0.0, 1.0);
+    k = k * k * k * (k * (k * 6.0 - 15.0) + 10.0);
+    vec2 scatter = vec2(sin(aPhase * 13.0), cos(aPhase * 17.0)) * (0.02 + 0.08 * fract(aPhase * 3.7));
+    ndc = mix(ndc, uTarget + scatter, k);
 
     clip.xy = ndc * clip.w;
     gl_Position = clip;
@@ -139,16 +153,17 @@ function buildUniforms() {
     uPixelRatio: { value: 1 },
     uAspect: { value: 1 },
     uMouse: { value: new THREE.Vector2(0, 0) },
-    uDrag: { value: new THREE.Vector2(0, 0) },
     uStrength: { value: 0 },
+    uPull: { value: 0 },
+    uTarget: { value: new THREE.Vector2(0, 0) },
   };
 }
 
 export default function Embers() {
   const groupRef = useRef(null);
   const materialRef = useRef(null);
+  const moverRef = useRef(null);
   const target = useRef({ x: 0, y: 0, on: 0, snap: false });
-  const slow = useRef({ x: 0, y: 0 });
 
   const { positions, sizes, phases, speeds, colors } = useMemo(
     () => buildEmbers(),
@@ -191,36 +206,37 @@ export default function Embers() {
 
     if (t.snap) {
       u.uMouse.value.set(t.x, t.y);
-      slow.current.x = t.x;
-      slow.current.y = t.y;
       t.snap = false;
     }
 
-    // المؤشر الناعم (يتبع الماوس بسرعة معقولة)
-    const kM = 1 - Math.exp(-delta * 10);
+    // مؤشر ناعم بدون تجاوز أو ارتداد
+    const kM = 1 - Math.exp(-delta * 4);
     u.uMouse.value.x += (t.x - u.uMouse.value.x) * kM;
     u.uMouse.value.y += (t.y - u.uMouse.value.y) * kM;
 
-    // مؤشر بطيء يلحق بالأول: الفرق بينهما = اتجاه الحركة
-    const kS = 1 - Math.exp(-delta * 3.5);
-    slow.current.x += (u.uMouse.value.x - slow.current.x) * kS;
-    slow.current.y += (u.uMouse.value.y - slow.current.y) * kS;
-
-    const dx = THREE.MathUtils.clamp(
-      u.uMouse.value.x - slow.current.x,
-      -0.3,
-      0.3,
-    );
-    const dy = THREE.MathUtils.clamp(
-      u.uMouse.value.y - slow.current.y,
-      -0.3,
-      0.3,
-    );
-    u.uDrag.value.set(dx * 1.2, dy * 1.2);
-
-    // تلاشي منطقة التأثير عند خروج الماوس
-    const kF = 1 - Math.exp(-delta * (t.on ? 5 : 2));
+    // ظهور وتلاشي بطيئين لمنطقة التأثير
+    const kF = 1 - Math.exp(-delta * (t.on ? 2 : 1.2));
     u.uStrength.value += (t.on - u.uStrength.value) * kF;
+
+    // تقدّم السحب يتبع تقدّم الـ scroll بنعومة
+    const kP = 1 - Math.exp(-delta * 6);
+    u.uPull.value += (scrollFx.progress - u.uPull.value) * kP;
+
+    // موضع الصورة المتحركة على الشاشة، محوّلاً إلى إحداثيات الكانفاس
+    if (u.uPull.value > 0.001) {
+      if (!moverRef.current) {
+        moverRef.current = document.getElementById("portrait-mover");
+      }
+      const el = moverRef.current;
+      if (el) {
+        const r = el.getBoundingClientRect();
+        const c = state.gl.domElement.getBoundingClientRect();
+        u.uTarget.value.set(
+          ((r.left + r.width / 2 - c.left) / c.width) * 2 - 1,
+          -(((r.top + r.height / 2 - c.top) / c.height) * 2 - 1),
+        );
+      }
+    }
 
     g.position.copy(state.camera.position);
     g.rotation.y += delta * 0.006;

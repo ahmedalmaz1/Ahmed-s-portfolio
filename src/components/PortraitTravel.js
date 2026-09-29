@@ -2,6 +2,7 @@
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { scrollFx } from "./scrollFx"; // adjust the path to where you put scrollFx.js
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -35,6 +36,11 @@ export default function PortraitTravel() {
           end: "top top", // portrait lands when About reaches the top
           scrub: 1,
           invalidateOnRefresh: true,
+          // tell the fireflies how far the portrait has travelled / whether it landed
+          onUpdate: (self) => {
+            scrollFx.progress = self.progress;
+            scrollFx.landed = self.progress > 0.985;
+          },
         },
       });
 
@@ -69,6 +75,11 @@ export default function PortraitTravel() {
           },
           0.62,
         );
+
+      return () => {
+        scrollFx.progress = 0;
+        scrollFx.landed = false;
+      };
     });
 
     document.fonts?.ready.then(() => ScrollTrigger.refresh());
