@@ -54,8 +54,8 @@ export default function HeroCanvas({ heroRef, fovDegrees }) {
         reducedMotion={reducedMotion}
       />
       <Terrain cursorRef={cursorRef} />
-      <Moon />
       <Fireflies />
+      <Moon />
     </Canvas>
   );
 }

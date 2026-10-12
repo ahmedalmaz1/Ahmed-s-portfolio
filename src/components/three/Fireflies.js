@@ -20,7 +20,6 @@ function pickColor() {
   let r = Math.random();
   for (const { c, w } of COLORS) {
     if ((r -= w) <= 0) {
-      // الشيدر لا يحوّل مساحة اللون، فنرجع القيمة إلى sRGB
       return new THREE.Color(c).convertLinearToSRGB();
     }
   }
@@ -52,21 +51,16 @@ const vertexShader = /* glsl */ `
     vec4 clip = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
     vec2 ndc = clip.xy / clip.w;
 
-    // منطقة التأثير حول المؤشر (جاوسية ناعمة)
     vec2 d = ndc - uMouse;
     d.x *= uAspect;
-    float sigma = 0.35;
+    float sigma = 0.45;
     float g = exp(-dot(d, d) / (sigma * sigma));
 
-    // انجذاب خفيف نحو المؤشر، ينعدم في المركز وعند الأطراف
     float depth = 0.6 + aSize / 8.0;
-    vec2 pull = -d * g * 0.25 * uStrength * depth;
+    vec2 pull = -d * g * 0.45 * uStrength * depth;
     pull.x /= uAspect;
     ndc += pull;
 
-    // سحب الفلاي فلايز نحو الصورة أثناء الانتقال إلى About.
-    // عند uPull = 0 لا يتغير أي شيء، فمواضعها في الـ landing كما هي.
-    // الأقرب للصورة يتحرك أولاً، فيظهر السحب كموجة ناعمة.
     vec2 toT = (ndc - uTarget) * vec2(uAspect, 1.0);
     float delay = clamp(length(toT) * 0.25, 0.0, 0.4) + fract(aPhase * 0.318) * 0.1;
     float k = clamp((uPull - delay) / 0.5, 0.0, 1.0);
@@ -91,7 +85,6 @@ const fragmentShader = /* glsl */ `
     float d = length(gl_PointCoord - 0.5) * 2.0;
     if (d > 1.0) discard;
 
-    // نواة حادة + هالة رفيعة
     float core = 1.0 - smoothstep(0.0, 0.55, d);
     float halo = pow(1.0 - d, 3.0) * 0.45;
     float a = (core + halo) * vTwinkle;
@@ -129,7 +122,6 @@ function buildEmbers() {
     v.normalize().multiplyScalar(RADIUS * (0.9 + Math.random() * 0.1));
     positions.set([v.x, v.y, v.z], i * 3);
 
-    // معظمها صغير جداً، وقلة كبيرة
     const r = Math.random();
     sizes[i] =
       r < 0.7
@@ -179,7 +171,6 @@ export default function Embers() {
     }
 
     const move = (e) => {
-      // أول دخول للماوس: ابدأ من مكانه مباشرة بدون قفزة
       if (!target.current.on) target.current.snap = true;
       target.current.x = (e.clientX / window.innerWidth) * 2 - 1;
       target.current.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -209,20 +200,16 @@ export default function Embers() {
       t.snap = false;
     }
 
-    // مؤشر ناعم بدون تجاوز أو ارتداد
-    const kM = 1 - Math.exp(-delta * 4);
+    const kM = 1 - Math.exp(-delta * 2.5);
     u.uMouse.value.x += (t.x - u.uMouse.value.x) * kM;
     u.uMouse.value.y += (t.y - u.uMouse.value.y) * kM;
 
-    // ظهور وتلاشي بطيئين لمنطقة التأثير
-    const kF = 1 - Math.exp(-delta * (t.on ? 2 : 1.2));
+    const kF = 1 - Math.exp(-delta * (t.on ? 1.5 : 1.0));
     u.uStrength.value += (t.on - u.uStrength.value) * kF;
 
-    // تقدّم السحب يتبع تقدّم الـ scroll بنعومة
     const kP = 1 - Math.exp(-delta * 6);
     u.uPull.value += (scrollFx.progress - u.uPull.value) * kP;
 
-    // موضع الصورة المتحركة على الشاشة، محوّلاً إلى إحداثيات الكانفاس
     if (u.uPull.value > 0.001) {
       if (!moverRef.current) {
         moverRef.current = document.getElementById("portrait-mover");

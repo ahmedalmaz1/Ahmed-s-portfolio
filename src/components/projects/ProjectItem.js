@@ -10,91 +10,220 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 export default function ProjectRow({ project, index }) {
   const rootRef = useRef(null);
+  const cardRef = useRef(null);
+  const glassRef = useRef(null);
   const imgWrapRef = useRef(null);
   const copyRef = useRef(null);
 
   useGSAP(
     () => {
-      if (!rootRef.current || !imgWrapRef.current || !copyRef.current) return;
+      const card = cardRef.current;
+      const glass = glassRef.current;
+      const img = imgWrapRef.current;
+      const copy = copyRef.current;
+
+      if (!rootRef.current || !card || !glass || !img || !copy) return;
 
       const mm = gsap.matchMedia();
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.set(imgWrapRef.current, { autoAlpha: 0, x: -60 });
-        gsap.set(copyRef.current.children, { autoAlpha: 0, x: 60 });
 
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: rootRef.current,
-            start: "top 82%",
-            end: "top 42%",
-            scrub: 0.7,
-          },
-        });
+      mm.add(
+        {
+          desktop: "(min-width: 768px)",
+          reduce: "(prefers-reduced-motion: reduce)",
+        },
+        (ctx) => {
+          const { desktop, reduce } = ctx.conditions;
+          if (reduce) return;
 
-        tl.to(
-          imgWrapRef.current,
-          { autoAlpha: 1, x: 0, ease: "power3.out" },
-          0,
-        ).to(
-          copyRef.current.children,
-          { autoAlpha: 1, x: 0, stagger: 0.1, ease: "power3.out" },
-          0.12,
-        );
-      });
+          const k = desktop ? 1 : 0.55;
+          const col = index % 2;
+          const dir = col === 0 ? 1 : -1;
+
+          gsap.set(card, {
+            transformPerspective: 1300,
+            transformOrigin: "50% 60%",
+          });
+
+          const tl = gsap.timeline({
+            defaults: { ease: "none" },
+            scrollTrigger: {
+              trigger: rootRef.current,
+              start: desktop ? `top ${100 - col * 7}%` : "top 100%",
+              end: "bottom 0%",
+              scrub: 0.8,
+            },
+          });
+
+          tl.fromTo(
+            card,
+            {
+              rotateX: 42 * k,
+              rotateY: -16 * dir * k,
+              rotateZ: 3 * dir * k,
+              z: -300 * k,
+              y: 120 * k,
+            },
+            {
+              rotateX: 0,
+              rotateY: 0,
+              rotateZ: 0,
+              z: 0,
+              y: 0,
+              ease: "power2.out",
+              duration: 0.4,
+            },
+            0,
+          )
+            .fromTo(glass, { opacity: 0 }, { opacity: 1, duration: 0.22 }, 0)
+            .fromTo(img, { opacity: 0 }, { opacity: 1, duration: 0.22 }, 0.04)
+            .fromTo(copy, { opacity: 0 }, { opacity: 1, duration: 0.22 }, 0.1)
+            .to(
+              card,
+              {
+                rotateX: -24 * k,
+                rotateY: 12 * dir * k,
+                rotateZ: -2 * dir * k,
+                z: -220 * k,
+                y: -90 * k,
+                ease: "power2.in",
+                duration: 0.4,
+              },
+              0.6,
+            )
+            .to(
+              [glass, img, copy],
+              {
+                opacity: 0,
+                duration: 0.25,
+              },
+              0.75,
+            );
+        },
+      );
+
+      return () => mm.revert();
     },
-    { scope: rootRef },
+    {
+      scope: rootRef,
+      dependencies: [index],
+    },
   );
 
   return (
-    <li
-      ref={rootRef}
-      className="flex flex-col items-start gap-8 md:flex-row md:items-center md:gap-16"
-    >
-      <Link
-        href={`/projects/${project.slug}`}
-        className="group block w-full md:w-[48%]"
+    <li ref={rootRef} className="h-full">
+      <div
+        ref={cardRef}
+        className="relative flex h-full flex-col overflow-hidden rounded-md will-change-transform "
+        style={{ transformStyle: "preserve-3d" }}
       >
+        {/* Transparent glass background */}
         <div
-          ref={imgWrapRef}
-          className="relative aspect-[16/9] w-full overflow-hidden  bg-surface will-change-transform"
-        >
-          {project.cover ? (
-            <Image
-              src={project.cover}
-              alt={project.title}
-              fill
-              sizes="(min-width: 768px) 48vw, 100vw"
-              className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-              priority={index === 0}
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-xs text-muted">
-              No image
-            </div>
-          )}
-        </div>
-      </Link>
+          ref={glassRef}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-md bg-surface/5 backdrop-blur-xs"
+        />
 
-      <div ref={copyRef} className="w-full md:w-[45%]">
-        {/* <span className="font-mono text-xs text-accent">
-          {String(index + 1).padStart(2, "0")}
-        </span> */}
-        <h3 className="mt-3 font-display text-[clamp(1.75rem,3vw,2.5rem)] font-bold leading-[1.05] tracking-[-0.02em] text-ink">
-          {project.title}
-        </h3>
-        <p className="mt-4 max-w-md text-ink2">{project.summary}</p>
-        <Link
-          href={`/projects/${project.slug}`}
-          className="group mt-5 inline-flex items-center gap-2 text-sm font-medium text-ink transition-colors hover:text-accent"
+        {/* Card content */}
+        <div
+          className="relative flex flex-1 flex-col"
+          style={{ transformStyle: "preserve-3d" }}
         >
-          View project
-          <span
-            aria-hidden="true"
-            className="transition-transform group-hover:translate-x-1"
+          {/* Image */}
+          <Link
+            href={`/projects/${project.slug}`}
+            className="group block w-full"
+            style={{ transform: "translateZ(22px)" }}
           >
-            →
-          </span>
-        </Link>
+            <div
+              ref={imgWrapRef}
+              className="
+                relative
+                aspect-[16/9]
+                w-full
+                overflow-hidden
+              "
+            >
+              {project.cover ? (
+                <Image
+                  src={project.cover}
+                  alt={project.title}
+                  fill
+                  sizes="(min-width: 768px) 45vw, 100vw"
+                  className="
+                    object-cover
+                    transition-transform
+                    duration-700
+                    ease-out
+                    group-hover:scale-[1.04]
+                  "
+                  priority={index < 2}
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-xs text-muted">
+                  No image
+                </div>
+              )}
+            </div>
+          </Link>
+
+          {/* Details — same width as image + padding */}
+          {/* <div
+            ref={copyRef}
+            className="
+              flex
+              min-h-[220px]
+              w-full
+              flex-1
+              flex-col
+              items-start
+              p-6
+              md:p-7
+            "
+            style={{ transform: "translateZ(40px)" }}
+          >
+            <h3
+              className="
+                font-display
+                text-[clamp(1.4rem,2.2vw,2rem)]
+                font-bold
+                leading-[1.05]
+                tracking-[-0.02em]
+                text-ink
+              "
+            >
+              {project.title}
+            </h3>
+
+            <p className="mt-3 max-w-md text-ink2">{project.summary}</p>
+
+            <Link
+              href={`/projects/${project.slug}`}
+              className="
+                group
+                mt-auto
+                inline-flex
+                items-center
+                gap-2
+                pt-5
+                text-sm
+                font-medium
+                text-ink
+                transition-colors
+                hover:text-accent
+              "
+            >
+              View project
+              <span
+                aria-hidden="true"
+                className="transition-transform group-hover:translate-x-1"
+              >
+                →
+              </span>
+            </Link>
+          </div>
+
+           */}
+        </div>
       </div>
     </li>
   );

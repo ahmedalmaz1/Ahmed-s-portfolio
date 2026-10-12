@@ -65,7 +65,7 @@ export const PROJECTS = [
     images: ["/image6.jpg", "/image7.jpg", "/image5.jpg"],
   },
   {
-    slug: "frozen-pass",
+    slug: "frozen-pass2",
     title: "Frozen Pass2",
     summary:
       "A snowbound mountain pass, built as a real-time environment and a 40-second cinematic.",
@@ -78,41 +78,6 @@ export const PROJECTS = [
     ],
     video: "https://www.youtube.com/watch?v=GdWR1QQLW-k",
     cover: "/image.jpg",
-    images: ["/image6.jpg", "/image7.jpg", "/image5.jpg"],
-  },
-  {
-    slug: "ember-canyon",
-    title: "Ember Canyon2",
-    video: "https://www.youtube.com/watch?v=GdWR1QQLW-k",
-
-    summary:
-      "A desert canyon at golden hour, lit and filmed as a short cinematic.",
-    description:
-      "Sculpted canyon walls, dust and heat haze, and one slow dolly shot graded inside the engine.",
-    stack:
-      "Unreal Engine 5, ZBrush, Substance 3D Painter, Lumen, Movie Render Queue",
-    links: [
-      { label: "Watch the cinematic", href: "#" },
-      { label: "ArtStation", href: "#" },
-    ],
-    cover: "/image2.jpg",
-    images: ["/image6.jpg", "/image7.jpg", "/image5.jpg"],
-  },
-  {
-    slug: "tidal-ruins",
-    title: "Tidal Ruins2",
-    video: "https://www.youtube.com/watch?v=GdWR1QQLW-k",
-
-    summary:
-      "A flooded ruin with water, mist and low sun, cut from three camera angles.",
-    description:
-      "Hand-placed ruins, a water plane with shoreline foam, and drifting mist. The cinematic edits three cameras together in Sequencer.",
-    stack: "Unreal Engine 5, Blender, Quixel Megascans, Niagara, Sequencer",
-    links: [
-      { label: "Watch the cinematic", href: "#" },
-      { label: "ArtStation", href: "#" },
-    ],
-    cover: "/image2.jpg",
     images: ["/image6.jpg", "/image7.jpg", "/image5.jpg"],
   },
 ];

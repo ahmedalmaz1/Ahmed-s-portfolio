@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 const SECTIONS = ["about", "projects", "contact"];
 
@@ -16,18 +17,54 @@ function NavLink({ id, className, onClick }) {
 }
 
 export default function Nav() {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
 
-  // glass background appears after a little scrolling
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
+    setIsOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!isHome) return;
+
+    const TOP_ZONE = 80;
+    const THRESHOLD = 8;
+    let lastY = window.scrollY;
+    let ticking = false;
+
+    const update = () => {
+      const y = window.scrollY;
+      const delta = y - lastY;
+
+      setScrolled(y > 24);
+
+      if (y < TOP_ZONE) {
+        setHidden(false);
+      } else if (delta > THRESHOLD) {
+        setHidden(true);
+      } else if (delta < -THRESHOLD) {
+        setHidden(false);
+      }
+
+      if (Math.abs(delta) > THRESHOLD || y < TOP_ZONE) lastY = y;
+      ticking = false;
+    };
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    };
+
+    update();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [isHome]);
 
-  // while the menu is open: lock scroll, close on Escape, close if screen grows
   useEffect(() => {
     if (!isOpen) return;
     const onKey = (e) => e.key === "Escape" && setIsOpen(false);
@@ -44,9 +81,18 @@ export default function Nav() {
     };
   }, [isOpen]);
 
+  if (!isHome) return null;
+
+  const tucked = hidden && !isOpen;
+
   return (
     <>
-      <header className="pointer-events-none fixed inset-x-0 top-0 z-50">
+      <header
+        onFocus={() => setHidden(false)}
+        className={`pointer-events-none fixed inset-x-0 top-0 z-50 transition-transform duration-300 ease-out ${
+          tucked ? "-translate-y-full" : "translate-y-0"
+        }`}
+      >
         <div
           aria-hidden="true"
           className={`absolute inset-0 -z-10 border-b border-line/60 bg-bg/70 backdrop-blur-md transition-opacity duration-300 ${
@@ -63,7 +109,6 @@ export default function Nav() {
             AA
           </a>
 
-          {/* desktop nav (unchanged) */}
           <nav
             aria-label="Main"
             className="pointer-events-auto relative hidden gap-0.5 p-[5px] sm:flex"
@@ -77,7 +122,6 @@ export default function Nav() {
             ))}
           </nav>
 
-          {/* mobile button: two lines that morph into an X */}
           <button
             type="button"
             onClick={() => setIsOpen((prev) => !prev)}
