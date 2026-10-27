@@ -1,9 +1,9 @@
 import dynamic from "next/dynamic";
 import { Inter_Tight, DM_Sans } from "next/font/google";
-const ToastProvider = dynamic(() => import("@/providers/ToastProvider"));
-const Footer = dynamic(() => import("@/components/layout/Footer"));
-
+import "lenis/dist/lenis.css";
 import "./globals.css";
+
+const SmoothScroll = dynamic(() => import("@/components/SmoothScroll"));
 
 const display = Inter_Tight({
   subsets: ["latin"],
@@ -32,10 +32,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body>
-        <ToastProvider>
+        <SmoothScroll>
           {children}
-          <Footer />
-        </ToastProvider>
+        </SmoothScroll>
       </body>
     </html>
   );

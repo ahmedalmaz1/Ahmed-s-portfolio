@@ -1,80 +1,154 @@
 "use client";
-import dynamic from "next/dynamic";
-import { useRef, useState } from "react";
-import Portrait from "../Portrait";
+import { useRef } from "react";
+import Image from "next/image";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+import { SCROLL_PRESETS, useScrollPreset } from "@/components/SmoothScroll";
 
-const HeroCanvas = dynamic(() => import("../three/HeroCanvas"), { ssr: false });
+gsap.registerPlugin(ScrollTrigger, useGSAP);
 
-export default function Hero() {
-  const heroRef = useRef(null);
-  const [lensMm, setLensMm] = useState(35);
-  const [fovDegrees, setFovDegrees] = useState(
-    2 * Math.atan(12 / 35) * (180 / Math.PI),
+const SCROLL = 4000;
+
+export default function Hero({ frames, total }) {
+  const root = useRef(null);
+  const media = useRef(null);
+  const cv = useRef(null);
+  const tint = useRef(null);
+
+  useScrollPreset(root, {
+    inside: SCROLL_PRESETS.hero,
+    outside: SCROLL_PRESETS.site,
+    end: "bottom bottom",
+  });
+
+  useGSAP(
+    () => {
+      if (!total) return;
+      const canvas = cv.current;
+      const ctx = canvas.getContext("2d");
+      const state = { frame: 0 };
+      let last = -1;
+
+      const probe = document.createElement("canvas");
+      probe.width = probe.height = 8;
+      const pctx = probe.getContext("2d", { willReadFrequently: true });
+      const blackCache = new Map();
+
+      const isBlack = (i) => {
+        if (blackCache.has(i)) return blackCache.get(i);
+        pctx.drawImage(frames.current[i], 0, 0, 8, 8);
+        const d = pctx.getImageData(0, 0, 8, 8).data;
+        let sum = 0;
+        for (let k = 0; k < d.length; k += 4) {
+          sum += d[k] * 0.2126 + d[k + 1] * 0.7152 + d[k + 2] * 0.0722;
+        }
+        const black = sum / 64 < 3;
+        blackCache.set(i, black);
+        return black;
+      };
+
+      const draw = () => {
+        let i = Math.round(state.frame);
+        while (i > 0 && (!frames.current[i] || isBlack(i))) i--;
+        const img = frames.current[i];
+        if (!img || i === last) return;
+        last = i;
+        const r = Math.max(
+          canvas.width / img.width,
+          canvas.height / img.height,
+        );
+        ctx.drawImage(
+          img,
+          (canvas.width - img.width * r) / 2,
+          (canvas.height - img.height * r) / 2,
+          img.width * r,
+          img.height * r,
+        );
+      };
+
+      const resize = () => {
+        const dpr = Math.min(window.devicePixelRatio, 2);
+        canvas.width = canvas.clientWidth * dpr;
+        canvas.height = canvas.clientHeight * dpr;
+        last = -1;
+        draw();
+      };
+
+      resize();
+      window.addEventListener("resize", resize);
+      gsap.ticker.add(draw);
+
+      const cardRange = {
+        trigger: root.current,
+        start: () => `top+=${SCROLL} top`,
+        end: () => `top+=${SCROLL + window.innerHeight} top`,
+        scrub: true,
+        invalidateOnRefresh: true,
+      };
+
+      gsap.to(state, {
+        frame: total - 1,
+        ease: "none",
+        scrollTrigger: {
+          trigger: root.current,
+          start: "top top",
+          end: `+=${SCROLL}`,
+          scrub: true,
+        },
+      });
+
+      gsap.fromTo(
+        media.current,
+        { filter: "blur(0px) brightness(1)", scale: 1 },
+        {
+          filter: "blur(10px) brightness(0.45)",
+          scale: 1.06,
+          ease: "none",
+          scrollTrigger: cardRange,
+        },
+      );
+
+      gsap.fromTo(
+        tint.current,
+        { opacity: 0 },
+        { opacity: 1, ease: "none", scrollTrigger: cardRange },
+      );
+
+      return () => {
+        window.removeEventListener("resize", resize);
+        gsap.ticker.remove(draw);
+      };
+    },
+    { scope: root, dependencies: [total], revertOnUpdate: true },
   );
 
-  const handleLensChange = (mm) => {
-    setLensMm(mm);
-    setFovDegrees(2 * Math.atan(12 / mm) * (180 / Math.PI));
-  };
-
   return (
-    <section
-      id="top"
-      ref={heroRef}
-      className="relative isolate z-10 flex min-h-[100svh] items-center"
-      style={{
-        background:
-          "radial-gradient(70% 60% at 72% 62%, rgba(126,200,227,.12), rgba(126,200,227,0) 70%)",
-      }}
-    >
-      <div className="absolute inset-0 overflow-hidden">
-        <HeroCanvas heroRef={heroRef} fovDegrees={fovDegrees} />
+    <div ref={root} style={{ height: `calc(200vh + ${SCROLL}px)` }}>
+      <section
+        aria-label="Hero"
+        className="grain sticky top-0 h-screen overflow-hidden bg-bg"
+      >
+        <div
+          ref={media}
+          className="absolute inset-0 will-change-[filter,transform]"
+        >
+          <Image
+            src="/hero-poster.webp"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+          <canvas ref={cv} className="absolute inset-0 h-full w-full" />
+        </div>
 
         <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-20 opacity-10 mix-blend-overlay"
-          style={{ backgroundImage: "var(--grain)" }}
+          ref={tint}
+          className="grain pointer-events-none absolute inset-0 bg-bg opacity-0"
         />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10"
-          style={{
-            background:
-              "linear-gradient(180deg,rgba(4,8,12,.6) 0%,rgba(4,8,12,0) 18%)," +
-              "linear-gradient(0deg,#04080c 0%,rgba(4,8,12,0) 20%)," +
-              "linear-gradient(90deg,rgba(4,8,12,.84) 0%,rgba(4,8,12,.5) 45%,rgba(4,8,12,0) 78%)",
-          }}
-        />
-      </div>
-      <div className="relative z-10 mx-auto grid w-full max-w-[1240px] grid-cols-1 items-center gap-8 px-5 pb-12 pt-36 sm:px-8 md:grid-cols-[1.15fr_0.85fr] md:gap-16 md:px-16 md:pb-20 md:pt-40">
-        {" "}
-        <div className="text-center md:text-left">
-          <h1
-            aria-label="Ahmed Almaz"
-            className="text-balance font-body text-[clamp(2.5rem,11vw,3.5rem)] font-extrabold leading-[0.92] md:text-[clamp(2rem,5vw,5rem)]"
-          >
-            <span className="motion-safe:animate-wipe block">Ahmed</span>
-            <span className="motion-safe:animate-wipe block [animation-delay:0.14s]">
-              Almaz
-            </span>
-          </h1>
-          <p className="motion-safe:animate-settle mt-5 font-display text-[clamp(1.05rem,1.8vw,1.35rem)] font-semibold text-[#4C798A] [animation-delay:0.5s] md:mt-6">
-            Environment and cinematic artist
-          </p>
-          <p className="motion-safe:animate-settle mx-auto mt-4 max-w-md text-pretty text-sm text-ink2 [animation-delay:0.62s] md:mx-0 md:mt-5">
-            I&rsquo;m a 3D artist building environments and cinematics in Unreal
-            Engine 5. I take a scene from blockout to lighting, camera and final
-            render, and I care most about the mood of every frame.
-          </p>
-        </div>
-        <div id="hero-portrait-slot">
-          <div id="portrait-mover" className="will-change-transform">
-            <div className="motion-safe:animate-arch">
-              <Portrait />
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+      </section>
+    </div>
   );
 }

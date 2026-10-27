@@ -1,98 +1,22 @@
 @import "tailwindcss";
 
 @theme {
+  --color-bg2: #0a1017;
   --color-bg: #050a0f;
-  /* --color-bg: #070e14; */
-
-  --color-surface: #060b10;
-  --color-line: #172636;
+  --color-accent: #eef2f4;
   --color-ink: #eef2f4;
-  --color-ink2: #c9d3d6;
-  --color-muted: #8a99a3;
-  --color-accent: #7ec8e3;
-  --color-accent-light: #a8dced;
 
   --font-display:
     var(--font-display-family), "Helvetica Neue", Arial, sans-serif;
   --font-body:
     var(--font-body-family), system-ui, -apple-system, "Segoe UI", Roboto,
     sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-
-  --animate-wipe: wipe 1s cubic-bezier(0.65, 0, 0.15, 1) both;
-  --animate-arch: arch 1.1s cubic-bezier(0.65, 0, 0.15, 1) 0.15s both;
-  --animate-settle: settle 0.8s ease both;
-}
-:root {
-  --footer-h: 72px;
-
-  --animate-aurora-a: aurora-a 22s ease-in-out infinite alternate;
-  --animate-aurora-b: aurora-b 26s ease-in-out infinite alternate;
-  --animate-aurora-c: aurora-c 30s ease-in-out infinite alternate;
-}
-
-@keyframes aurora-a {
-  from {
-    transform: translate(0, 0) scale(1);
-  }
-  to {
-    transform: translate(6%, 8%) scale(1.15);
-  }
-}
-
-@keyframes aurora-b {
-  from {
-    transform: translate(0, 0) scale(1);
-  }
-  to {
-    transform: translate(-8%, 5%) scale(1.1);
-  }
-}
-
-@keyframes aurora-c {
-  from {
-    transform: translate(0, 0) scale(1);
-  }
-  to {
-    transform: translate(5%, -6%) scale(1.08);
-  }
-}
-
-@keyframes wipe {
-  from {
-    clip-path: inset(-0.2em 100% -0.2em -0.2em);
-  }
-
-  to {
-    clip-path: inset(-0.2em -0.2em -0.2em -0.2em);
-  }
-}
-
-@keyframes arch {
-  from {
-    clip-path: inset(100% 0 0 0);
-  }
-
-  to {
-    clip-path: inset(0 0 0 0);
-  }
-}
-
-@keyframes settle {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
 }
 
 @layer base {
   :root {
     color-scheme: dark;
-
-    /* --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); */
+    --texture-grain: url("/textures/grain0.webp");
   }
 
   html {
@@ -106,46 +30,73 @@
   }
 
   body {
-    @apply bg-bg text-ink font-body;
+    @apply bg-bg text-ink font-body grain;
     font-size: 1.0625rem;
     line-height: 1.6;
   }
-}
 
-@layer utilities {
-  .bg-portrait-light {
-    background:
-      radial-gradient(
-        circle 130px at var(--lx, 50%) var(--ly, 38%),
-        color-mix(in srgb, var(--color-accent) 16%, transparent),
-        transparent 100%
-      ),
-      radial-gradient(
-        circle 230px at var(--lx, 50%) var(--ly, 38%),
-        transparent 0%,
-        color-mix(in srgb, var(--color-bg) 55%, transparent) 100%
-      );
-  }
+  @layer base {
+    :root {
+      --gutter: 1rem;
+    }
 
-  @media (prefers-reduced-motion: reduce) {
-    * {
-      animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
+    @media (min-width: 40rem) {
+      :root {
+        --gutter: 1.5rem;
+      }
+    }
+
+    @media (min-width: 64rem) {
+      :root {
+        --gutter: 5rem;
+      }
     }
   }
 }
-.frame {
-  --frame-color: var(--color-line);
-  --frame-seg: 30%;
 
-  border-inline: 1px solid var(--frame-color);
-  background:
-    linear-gradient(var(--frame-color), var(--frame-color)) top left /
-      var(--frame-seg) 1px no-repeat,
-    linear-gradient(var(--frame-color), var(--frame-color)) top right /
-      var(--frame-seg) 1px no-repeat,
-    linear-gradient(var(--frame-color), var(--frame-color)) bottom left /
-      var(--frame-seg) 1px no-repeat,
-    linear-gradient(var(--frame-color), var(--frame-color)) bottom right /
-      var(--frame-seg) 1px no-repeat;
+/* Background grain.
+   Add `grain` next to a background colour (bg-bg, bg-bg2, bg-black ...) to give
+   that surface the texture. The tile is transparent, so the colour underneath
+   is kept; only backgrounds get it, never images or content. */
+@utility grain {
+  background-image: var(--texture-grain);
+  background-repeat: repeat;
+  background-size: 256px 256px;
+
+  /* same grain size on retina screens (otherwise it looks soft/enlarged) */
+  @media (min-resolution: 2dppx) {
+    background-size: 128px 128px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
 }
