@@ -1,8 +1,16 @@
 {
-	"name": "<WORKER_NAME>",
+	"name": "ahmed-portfolio-api",
 	"main": "src/index.js",
-	"compatibility_date": "<COMPATIBILITY_DATE>",
+	"compatibility_date": "2026-10-01",
+	"account_id": "6afb515bfd2b60d6e83ff662b480fc13",
 	"observability": {
 		"enabled": true,
 	},
+	"d1_databases": [
+		{
+			"binding": "portfolio_db",
+			"database_name": "portfolio-db",
+			"database_id": "b948e15f-b77a-4665-9b84-adcf430971c8",
+		},
+	],
 }
