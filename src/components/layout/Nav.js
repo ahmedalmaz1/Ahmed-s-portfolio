@@ -1,8 +1,10 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import gsap from "gsap";
-import { useLenis } from "../SmoothScroll";
-import RollText from "../../lib/rollText";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { gsap } from "@/lib/gsap";
+import { usePageTransition } from "@/components/PageTransition";
+import { useLenis } from "@/components/SmoothScroll";
+import RollText from "@/lib/rollText";
 
 const LINKS = [
   { label: "Home", href: "#top" },
@@ -17,6 +19,13 @@ export default function Navbar({ visible }) {
   const [open, setOpen] = useState(false);
   const lenisRef = useLenis();
   const bar = useRef(null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const transition = usePageTransition();
+  const onHome = pathname === "/";
+
+  // on other pages the section links point back to the home page
+  const hrefOf = (href) => (onHome ? href : href === "#top" ? "/" : `/${href}`);
 
   useEffect(() => {
     if (!visible) return;
@@ -27,10 +36,14 @@ export default function Navbar({ visible }) {
     );
   }, [visible]);
 
-  const toggle = (next) => {
-    setOpen(next);
-    next ? lenisRef.current?.stop() : lenisRef.current?.start();
-  };
+  const toggle = useCallback(
+    (next) => {
+      setOpen(next);
+      if (next) lenisRef.current?.stop();
+      else lenisRef.current?.start();
+    },
+    [lenisRef],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -43,12 +56,18 @@ export default function Navbar({ visible }) {
       window.removeEventListener("keydown", onKey);
       mq.removeEventListener("change", onMq);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, toggle]);
 
   const go = (e, href) => {
     e.preventDefault();
     toggle(false);
+
+    if (!onHome) {
+      const to = hrefOf(href);
+      transition ? transition.navigate(to) : router.push(to);
+      return;
+    }
+
     const lenis = lenisRef.current;
     if (!lenis) return;
 
@@ -84,7 +103,7 @@ export default function Navbar({ visible }) {
           className="flex h-16 items-center justify-between px-(--gutter) pt-3 sm:h-20 sm:pt-0"
         >
           <a
-            href="#top"
+            href={hrefOf("#top")}
             onClick={(e) => go(e, "#top")}
             className="flex items-center gap-3"
             aria-label="Ahmed Almaz, back to top"
@@ -94,14 +113,14 @@ export default function Navbar({ visible }) {
             </span>
           </a>
 
-          <ul className="hidden items-center gap-10 md:flex">
+          <ul className="hidden items-center gap-1 rounded-full border border-white/10 bg-black/50 p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150 md:flex">
             {LINKS.map((l) => (
               <li key={l.href}>
                 <a
-                  href={l.href}
+                  href={hrefOf(l.href)}
                   onClick={(e) => go(e, l.href)}
                   aria-label={l.label}
-                  className="group block py-2 text-xs uppercase tracking-[0.3em] font-bold"
+                  className="group block rounded-full px-5 py-2 text-xs font-bold uppercase tracking-[0.3em] transition-colors duration-300 hover:bg-white/10"
                 >
                   <RollText text={l.label} />
                 </a>
@@ -137,11 +156,11 @@ export default function Navbar({ visible }) {
         {LINKS.map((l, i) => (
           <a
             key={l.href}
-            href={l.href}
+            href={hrefOf(l.href)}
             tabIndex={open ? 0 : -1}
             onClick={(e) => go(e, l.href)}
             style={{ transitionDelay: open ? `${150 + i * 70}ms` : "0ms" }}
-            className={`text-3xl font-light uppercase tracking-[0.25em] text-white transition-[opacity,transform,color] duration-500 ease-out hover:text-accent ${
+            className={`font-display text-3xl font-light uppercase tracking-[0.25em] text-white transition-[opacity,transform,color] duration-500 ease-out hover:text-accent ${
               open ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
             }`}
           >

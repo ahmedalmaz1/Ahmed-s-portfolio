@@ -1,13 +1,9 @@
 "use client";
 import { useRef } from "react";
-import Link from "next/link";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-import ProjectCard from "./ProjectCard";
+import TransitionLink from "@/components/TransitionLink";
+import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
+import ProjectCard from "@/components/project/ProjectCard";
 import { PROJECTS } from "@/data/projects";
-
-gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 export default function Projects() {
   const root = useRef(null);
@@ -71,7 +67,6 @@ export default function Projects() {
       className="relative z-10 pb-[35vh] pt-8 text-white sm:pt-10 lg:pt-12"
     >
       <div className="mx-(--gutter)">
-        
         <div className="mx-auto mb-10 mt-6 flex max-w-6xl flex-col items-center justify-center px-4 sm:mb-14 sm:mt-8 sm:px-10 lg:mb-16 lg:mt-12 xl:px-0">
           <div data-heading className="opacity-0">
             <h2 className="mt-6 max-w-3xl text-3xl font-bold uppercase leading-[1.15] tracking-tight sm:text-5xl lg:text-6xl">
@@ -83,7 +78,7 @@ export default function Projects() {
         <div className="flex flex-col gap-3 sm:gap-4 lg:gap-6">
           {PROJECTS.map((p, i) => (
             <ProjectCard
-              key={p.title}
+              key={p.slug}
               project={p}
               index={i}
               priority={i === 0}
@@ -97,7 +92,7 @@ export default function Projects() {
         >
           <span data-rule className="h-px flex-1 bg-white/15" />
 
-          <Link
+          <TransitionLink
             data-cta
             href="/projects"
             className="group/cta relative inline-flex shrink-0 items-center gap-3 overflow-hidden rounded-full border border-white/20 px-6 py-3 text-sm font-medium text-white opacity-0 transition-colors duration-500 hover:border-accent hover:text-bg"
@@ -122,7 +117,7 @@ export default function Projects() {
               <path d="M5 12h14" />
               <path d="m13 6 6 6-6 6" />
             </svg>
-          </Link>
+          </TransitionLink>
 
           <span data-rule className="h-px flex-1 bg-white/15" />
         </div>

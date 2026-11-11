@@ -44,7 +44,6 @@ export const PROJECTS = [
     image: "/realImage.jpg",
     images: [
       { src: "/im3.jpg", width: 1920, height: 1080 },
-      // { src: "/im4.webp", width: 1920, height: 1080 },
       { src: "/im5.webp", width: 1920, height: 1080 },
     ],
     tools: ["Unreal Engine 5", "Blender", "ZBrush", "Quixel Megascans"],

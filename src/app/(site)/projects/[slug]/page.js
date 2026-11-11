@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import ProjectDetail from "@/components/project/ProjectDetail";
 import { PROJECTS, getProject, getNextProject } from "@/data/projects";
+import { SITE_NAME } from "@/lib/site";
 
 export const dynamicParams = false;
 
@@ -12,11 +13,23 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const project = getProject(slug);
   if (!project) return {};
+
+  const title = `${project.title} | ${SITE_NAME}`;
   return {
-    title: `${project.title} | Ahmed Almaz`,
+    title,
     description: project.description,
+    alternates: { canonical: project.href },
     openGraph: {
-      title: `${project.title} | Ahmed Almaz`,
+      type: "website",
+      siteName: SITE_NAME,
+      title,
+      description: project.description,
+      url: project.href,
+      images: [project.image],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
       description: project.description,
       images: [project.image],
     },

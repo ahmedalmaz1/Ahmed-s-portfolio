@@ -1,11 +1,7 @@
 "use client";
 import { useRef } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-import { useLenis } from "@/components/SmoothScroll";
 import Image from "next/image";
-gsap.registerPlugin(ScrollTrigger, useGSAP);
+import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 
 const STATEMENT =
   "I build cinematic worlds in Unreal Engine: moody, lived-in environments where light, fog and detail tell the story before a single character appears.";
@@ -18,16 +14,16 @@ const BIO = [
 export default function About() {
   const root = useRef(null);
   const statement = useRef(null);
-  const lenisRef = useLenis();
 
   useGSAP(
     () => {
       const reduce = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
       ).matches;
-      const words = gsap.utils.toArray(".about-word");
-      const reveals = gsap.utils.toArray("[data-reveal]");
-      const counters = gsap.utils.toArray("[data-count]");
+      const q = gsap.utils.selector(root.current);
+      const words = q(".about-word");
+      const reveals = q("[data-reveal]");
+      const counters = q("[data-count]");
       const content = root.current.firstElementChild;
       const isMobile = () => window.innerWidth < 768;
 
@@ -111,11 +107,6 @@ export default function About() {
     },
     { scope: root },
   );
-
-  const goContact = (e) => {
-    e.preventDefault();
-    lenisRef.current?.scrollTo("#contact", { duration: 1.4 });
-  };
 
   return (
     <section

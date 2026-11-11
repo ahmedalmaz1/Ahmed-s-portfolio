@@ -1,83 +1,23 @@
 "use client";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-import { SCROLL_PRESETS, useScrollPreset } from "@/components/SmoothScroll";
+import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 
-gsap.registerPlugin(ScrollTrigger, useGSAP);
+const SCROLL = 3500; // px of scrolling that plays the whole video (lower = faster)
+const FOLLOW = 0.2; // 0..1, higher = video follows the scroll tighter
+const EPS = 1 / 60; // ignore time differences smaller than one frame
 
-const SCROLL = 4000;
-
-export default function Hero({ frames, total }) {
+// fallback: true only when the video is unavailable (reduced motion, save-data, error)
+export default function Hero({ src, fallback = false }) {
   const root = useRef(null);
   const media = useRef(null);
-  const cv = useRef(null);
+  const video = useRef(null);
   const tint = useRef(null);
-
-  useScrollPreset(root, {
-    inside: SCROLL_PRESETS.hero,
-    outside: SCROLL_PRESETS.site,
-    end: "bottom bottom",
-  });
+  const [ready, setReady] = useState(false); // first video frame decoded
 
   useGSAP(
     () => {
-      if (!total) return;
-      const canvas = cv.current;
-      const ctx = canvas.getContext("2d");
-      const state = { frame: 0 };
-      let last = -1;
-
-      const probe = document.createElement("canvas");
-      probe.width = probe.height = 8;
-      const pctx = probe.getContext("2d", { willReadFrequently: true });
-      const blackCache = new Map();
-
-      const isBlack = (i) => {
-        if (blackCache.has(i)) return blackCache.get(i);
-        pctx.drawImage(frames.current[i], 0, 0, 8, 8);
-        const d = pctx.getImageData(0, 0, 8, 8).data;
-        let sum = 0;
-        for (let k = 0; k < d.length; k += 4) {
-          sum += d[k] * 0.2126 + d[k + 1] * 0.7152 + d[k + 2] * 0.0722;
-        }
-        const black = sum / 64 < 3;
-        blackCache.set(i, black);
-        return black;
-      };
-
-      const draw = () => {
-        let i = Math.round(state.frame);
-        while (i > 0 && (!frames.current[i] || isBlack(i))) i--;
-        const img = frames.current[i];
-        if (!img || i === last) return;
-        last = i;
-        const r = Math.max(
-          canvas.width / img.width,
-          canvas.height / img.height,
-        );
-        ctx.drawImage(
-          img,
-          (canvas.width - img.width * r) / 2,
-          (canvas.height - img.height * r) / 2,
-          img.width * r,
-          img.height * r,
-        );
-      };
-
-      const resize = () => {
-        const dpr = Math.min(window.devicePixelRatio, 2);
-        canvas.width = canvas.clientWidth * dpr;
-        canvas.height = canvas.clientHeight * dpr;
-        last = -1;
-        draw();
-      };
-
-      resize();
-      window.addEventListener("resize", resize);
-      gsap.ticker.add(draw);
+      const v = video.current;
 
       const cardRange = {
         trigger: root.current,
@@ -87,40 +27,56 @@ export default function Hero({ frames, total }) {
         invalidateOnRefresh: true,
       };
 
-      gsap.to(state, {
-        frame: total - 1,
-        ease: "none",
-        scrollTrigger: {
-          trigger: root.current,
-          start: "top top",
-          end: `+=${SCROLL}`,
-          scrub: true,
-        },
-      });
-
+      // transform + opacity only: no blur, so scrolling stays on the GPU
       gsap.fromTo(
         media.current,
-        { filter: "blur(0px) brightness(1)", scale: 1 },
-        {
-          filter: "blur(10px) brightness(0.45)",
-          scale: 1.06,
-          ease: "none",
-          scrollTrigger: cardRange,
-        },
+        { scale: 1 },
+        { scale: 1.06, ease: "none", scrollTrigger: cardRange },
       );
-
       gsap.fromTo(
         tint.current,
         { opacity: 0 },
         { opacity: 1, ease: "none", scrollTrigger: cardRange },
       );
 
+      if (!src || !v) return;
+
+      const s = { progress: 0, current: 0, seeking: false, at: 0 };
+      const onSeeked = () => (s.seeking = false);
+      v.addEventListener("seeked", onSeeked);
+
+      const trigger = ScrollTrigger.create({
+        trigger: root.current,
+        start: "top top",
+        end: `+=${SCROLL}`,
+        onUpdate: (self) => (s.progress = self.progress),
+      });
+
+      const tick = () => {
+        const d = v.duration;
+        if (!d || !isFinite(d)) return;
+
+        const target = s.progress * (d - 0.05);
+        s.current += (target - s.current) * FOLLOW;
+        if (Math.abs(target - s.current) < 0.001) s.current = target;
+
+        const now = performance.now();
+        const free = !s.seeking || now - s.at > 250; // safety if "seeked" is missed
+        if (free && Math.abs(v.currentTime - s.current) > EPS) {
+          s.seeking = true;
+          s.at = now;
+          v.currentTime = s.current;
+        }
+      };
+      gsap.ticker.add(tick);
+
       return () => {
-        window.removeEventListener("resize", resize);
-        gsap.ticker.remove(draw);
+        gsap.ticker.remove(tick);
+        v.removeEventListener("seeked", onSeeked);
+        trigger.kill();
       };
     },
-    { scope: root, dependencies: [total], revertOnUpdate: true },
+    { scope: root, dependencies: [src], revertOnUpdate: true },
   );
 
   return (
@@ -129,19 +85,32 @@ export default function Hero({ frames, total }) {
         aria-label="Hero"
         className="grain sticky top-0 h-screen overflow-hidden bg-bg"
       >
-        <div
-          ref={media}
-          className="absolute inset-0 will-change-[filter,transform]"
-        >
-          <Image
-            src="/hero-poster.webp"
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover"
-          />
-          <canvas ref={cv} className="absolute inset-0 h-full w-full" />
+        <div ref={media} className="absolute inset-0 will-change-transform">
+          {fallback && (
+            <Image
+              src="/hero-poster.webp"
+              alt=""
+              fill
+              priority
+              quality={90}
+              sizes="100vw"
+              className="object-cover"
+            />
+          )}
+          {src && (
+            <video
+              ref={video}
+              src={src}
+              muted
+              playsInline
+              preload="auto"
+              disablePictureInPicture
+              disableRemotePlayback
+              aria-hidden="true"
+              onLoadedData={() => setReady(true)}
+              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-out ${ready ? "opacity-100" : "opacity-0"}`}
+            />
+          )}
         </div>
 
         <div

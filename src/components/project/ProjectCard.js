@@ -1,12 +1,8 @@
 "use client";
 import { useRef } from "react";
-import Link from "next/link";
+import TransitionLink from "@/components/TransitionLink";
 import Image from "next/image";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-
-gsap.registerPlugin(ScrollTrigger, useGSAP);
+import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 
 export default function ProjectCard({ project, index, priority = false }) {
   const root = useRef(null);
@@ -121,7 +117,7 @@ export default function ProjectCard({ project, index, priority = false }) {
       />
 
       {/* client-side navigation: keeps app state (loader, scroll positions) */}
-      <Link
+      <TransitionLink
         href={project.href}
         aria-label={project.title}
         className="absolute inset-0 z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
@@ -133,10 +129,14 @@ export default function ProjectCard({ project, index, priority = false }) {
         }`}
       >
         <div className="w-full lg:max-w-md">
-          <h3 className="text-2xl font-light leading-[1.05] tracking-tight drop-shadow-[0_2px_16px_rgba(5,10,15,0.7)] sm:text-4xl lg:mt-4 lg:text-6xl">
+          <h3
+            aria-label={project.title}
+            className="text-2xl font-light leading-[1.05] tracking-tight drop-shadow-[0_2px_16px_rgba(5,10,15,0.7)] sm:text-4xl lg:mt-4 lg:text-6xl"
+          >
             {project.title.split(" ").map((w, k) => (
               <span
                 key={k}
+                aria-hidden="true"
                 className="mr-[0.25em] inline-block overflow-hidden pb-[0.12em] align-top"
               >
                 <span data-line className="inline-block">
@@ -153,7 +153,7 @@ export default function ProjectCard({ project, index, priority = false }) {
             {project.description}
           </p>
 
-          <Link
+          <TransitionLink
             data-fade
             href={project.href}
             className="group/link z-20 relative mt-7 hidden items-center gap-1.5 border-b border-transparent pb-1 text-sm font-medium text-accent opacity-0 lg:inline-flex"
@@ -169,20 +169,20 @@ export default function ProjectCard({ project, index, priority = false }) {
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"
-              className="-rotate-45 transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover/link:rotate-0"
+              className="-rotate-45 transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:rotate-0"
             >
               <path d="M5 12h14" />
               <path d="m13 6 6 6-6 6" />
             </svg>
             <span
               aria-hidden="true"
-              className="absolute inset-x-0 bottom-0 h-[0.5px] origin-right bg-accent transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover/link:scale-x-0"
+              className="absolute inset-x-0 bottom-0 h-[0.5px] origin-right bg-accent transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:scale-x-0"
             />
             <span
               aria-hidden="true"
-              className="absolute inset-x-0 bottom-0 h-[0.5px] origin-left scale-x-0 bg-accent transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover/link:scale-x-100 group-hover/link:delay-300"
+              className="absolute inset-x-0 bottom-0 h-[0.5px] origin-left scale-x-0 bg-accent transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:scale-x-100 group-hover:delay-300"
             />
-          </Link>
+          </TransitionLink>
         </div>
       </div>
     </article>

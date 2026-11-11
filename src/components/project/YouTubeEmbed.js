@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { duck } from "@/lib/ambient";
 
-// Accepts a bare ID or any youtube URL (watch?v=, youtu.be/, embed/, shorts/)
 function parseId(input = "") {
   const s = String(input).trim();
   if (/^[\w-]{11}$/.test(s)) return s;
@@ -25,6 +25,12 @@ export default function YouTubeEmbed({
   const [copied, setCopied] = useState(false);
   const [thumb, setThumb] = useState(0);
 
+  useEffect(() => {
+    if (!playing) return;
+    duck(true);
+    return () => duck(false);
+  }, [playing]);
+
   const watchUrl = `https://www.youtube.com/watch?v=${id}`;
   const src = poster || `https://i.ytimg.com/vi/${id}/${THUMBS[thumb]}.jpg`;
 
@@ -38,8 +44,6 @@ export default function YouTubeEmbed({
     setThumb((n) => Math.min(n + 1, THUMBS.length - 1));
   }, []);
 
-  // YouTube serves a 120x90 grey placeholder (HTTP 200) when maxres is missing,
-  // so onError never fires — detect it by size.
   const onThumbLoad = useCallback(
     (e) => {
       if (!poster && e.currentTarget.naturalWidth <= 120) nextThumb();
@@ -58,12 +62,12 @@ export default function YouTubeEmbed({
 
   if (!id) return null;
 
-  const embedUrl =
-    `https://www.youtube.com/embed/${id}` +
-    `?autoplay=1&rel=0&modestbranding=1&playsinline=1` +
-    `&origin=${encodeURIComponent(
-      typeof window !== "undefined" ? window.location.origin : "",
-    )}`;
+  // only needed once the user presses play (client side, so window exists)
+  const embedUrl = playing
+    ? `https://www.youtube-nocookie.com/embed/${id}` +
+      `?autoplay=1&rel=0&modestbranding=1&playsinline=1` +
+      `&origin=${encodeURIComponent(window.location.origin)}`
+    : "";
 
   return (
     <div
@@ -79,7 +83,6 @@ export default function YouTubeEmbed({
             allowFullScreen
             referrerPolicy="strict-origin-when-cross-origin"
           />
-          {/* fallback if the embed is blocked (CSP, extension, network) */}
           <a
             href={watchUrl}
             target="_blank"

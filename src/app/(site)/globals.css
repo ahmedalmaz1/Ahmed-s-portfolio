@@ -5,22 +5,49 @@
   --color-bg: #050a0f;
   --color-accent: #eef2f4;
   --color-ink: #eef2f4;
+}
 
+/* "inline" makes Tailwind use these values as written, so the next/font
+   variables (set on <html> in layout.js) are always resolved correctly. */
+@theme inline {
   --font-display:
-    var(--font-display-family), "Helvetica Neue", Arial, sans-serif;
-  --font-body:
-    var(--font-body-family), system-ui, -apple-system, "Segoe UI", Roboto,
-    sans-serif;
+    var(--font-archivo), "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-sans:
+    var(--font-dm-sans), "DM Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
   :root {
     color-scheme: dark;
-    --texture-grain: url("/textures/grain0.webp");
+    --texture-grain: url("/textures/grain.webp");
+    --gutter: 1rem;
+  }
+
+  @media (min-width: 40rem) {
+    :root {
+      --gutter: 1.5rem;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    :root {
+      --gutter: 5rem;
+    }
   }
 
   html {
     scroll-padding-top: 76px;
+  }
+
+  /* every heading uses the display font; everything else uses DM Sans */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family:
+      var(--font-archivo), "Archivo", ui-sans-serif, system-ui, sans-serif;
   }
 
   @media (prefers-reduced-motion: no-preference) {
@@ -30,40 +57,17 @@
   }
 
   body {
-    @apply bg-bg text-ink font-body grain;
+    @apply bg-bg text-ink font-sans antialiased grain;
     font-size: 1.0625rem;
     line-height: 1.6;
   }
-
-  @layer base {
-    :root {
-      --gutter: 1rem;
-    }
-
-    @media (min-width: 40rem) {
-      :root {
-        --gutter: 1.5rem;
-      }
-    }
-
-    @media (min-width: 64rem) {
-      :root {
-        --gutter: 5rem;
-      }
-    }
-  }
 }
 
-/* Background grain.
-   Add `grain` next to a background colour (bg-bg, bg-bg2, bg-black ...) to give
-   that surface the texture. The tile is transparent, so the colour underneath
-   is kept; only backgrounds get it, never images or content. */
 @utility grain {
   background-image: var(--texture-grain);
   background-repeat: repeat;
   background-size: 256px 256px;
 
-  /* same grain size on retina screens (otherwise it looks soft/enlarged) */
   @media (min-resolution: 2dppx) {
     background-size: 128px 128px;
   }
@@ -80,23 +84,131 @@
   }
 }
 
-html.lenis,
-html.lenis body {
-  height: auto;
-}
-
+/* Lenis: the base rules come from "lenis/dist/lenis.css" (see layout.js);
+   only the additions live here. */
 .lenis.lenis-smooth {
   scroll-behavior: auto !important;
 }
 
-.lenis.lenis-stopped {
-  overflow: hidden;
-}
-
-.lenis [data-lenis-prevent] {
-  overscroll-behavior: contain;
-}
-
 .lenis.lenis-scrolling iframe {
   pointer-events: none;
+}
+
+/* Hide the native cursor ONLY when the custom one is active (mouse devices). */
+@media (hover: hover) and (pointer: fine) {
+  html.has-custom-cursor,
+  html.has-custom-cursor * {
+    cursor: none !important;
+  }
+}
+
+/* ---------- sound toggle (SoundToggle.js) ---------- */
+.snd {
+  --ring-w: 1px;
+  --bar-w: 1px;
+  --bar-h: 10px;
+  --gap: 1.5px;
+  --blur: 4px;
+  animation: snd-in 0.9s ease 1.2s both;
+}
+
+@media (min-width: 640px) {
+  .snd {
+    --bar-h: 12px;
+    --gap: 2px;
+    --blur: 5px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .snd {
+    --ring-w: 1.25px;
+    --bar-w: 1.5px;
+    --bar-h: 16px;
+    --gap: 2.5px;
+    --blur: 6px;
+  }
+}
+
+.snd-ring {
+  position: absolute;
+  inset: 0;
+  border: var(--ring-w) solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 var(--blur) rgba(255, 255, 255, 0.25);
+  opacity: 0.45;
+  transition:
+    opacity 0.7s ease,
+    transform 0.5s ease;
+}
+
+.snd-on .snd-ring {
+  opacity: 1;
+}
+
+.snd:hover .snd-ring {
+  transform: scale(1.06);
+}
+
+.snd:active .snd-ring {
+  transform: scale(0.95);
+}
+
+.snd-bars {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  height: var(--bar-h);
+}
+
+.snd-bar {
+  width: var(--bar-w);
+  height: 100%;
+  border-radius: 2px;
+  background: #fff;
+  transform: scaleY(0.12);
+  opacity: 0.55;
+  transition:
+    transform 0.6s ease,
+    opacity 0.6s ease;
+  will-change: transform;
+}
+
+.snd-on .snd-bar {
+  opacity: 1;
+  transform: scaleY(var(--hi));
+  animation: snd-bar var(--d) ease-in-out infinite;
+}
+
+@keyframes snd-bar {
+  0%,
+  100% {
+    transform: scaleY(var(--lo));
+  }
+  50% {
+    transform: scaleY(var(--hi));
+  }
+}
+
+@keyframes snd-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snd,
+  .snd-on .snd-bar {
+    animation: none;
+  }
+
+  .snd-on .snd-bar {
+    transform: scaleY(var(--hi));
+  }
 }

@@ -7,12 +7,22 @@ export default function Lightbox({ image, onClose }) {
 
   useEffect(() => {
     if (!image) return;
+
+    // remember what opened the dialog so focus can go back to it
+    const opener = document.activeElement;
+    closeRef.current?.focus();
+
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
+      // the close button is the only control: keep focus inside the dialog
+      if (e.key === "Tab") e.preventDefault();
     };
     window.addEventListener("keydown", onKey);
-    closeRef.current?.focus();
-    return () => window.removeEventListener("keydown", onKey);
+
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      opener?.focus?.();
+    };
   }, [image, onClose]);
 
   if (!image) return null;

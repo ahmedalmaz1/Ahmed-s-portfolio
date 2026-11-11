@@ -1,16 +1,13 @@
 "use client";
 import { useRef } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-
-gsap.registerPlugin(ScrollTrigger, useGSAP);
+import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 
 const VIDEO_SRC = "/video.mp4";
 const TITLE = "Worlds in motion";
 const BG = "#050a0f";
 const STEP = 90;
 const HIDDEN = 130;
+const HIDE_AT = 0.97;
 const PHRASES = [
   "Worlds designed with intention. Built to be experienced.",
   "Some worlds exist only in imagination. Until someone brings them to life.",
@@ -42,15 +39,15 @@ export default function Showreel() {
       const allWords = phrases.flat();
 
       const progress = { a: 0, u: 0, r: 0 };
-      const view = { o: 0, b: 0, d: 1, k: 1.1, l: 0, m: 0 };
+      const view = { o: 0, b: 0, d: 1, k: 1.1, l: 0, m: 0, h: 1 };
       let playing = false;
-      let timer;
-      let tries = 0;
+      let warmed = false;
       let projectsEl = null;
       let current = 0;
       let wanted = 0;
       let busy = false;
       let tl = null;
+      let finished = false; // true once the text has been retired
 
       const maxBlur = () => (window.innerWidth < 1024 ? 8 : 14);
       const clamp = (v) => Math.min(1, Math.max(0, v));
@@ -74,14 +71,24 @@ export default function Showreel() {
         el.style.maskImage = value;
       };
 
+      // The video is not downloaded with the page: it starts loading about a
+      // screen before the Projects section, long before it becomes visible.
+      const warm = () => {
+        if (warmed) return;
+        warmed = true;
+        video.preload = "auto";
+        video.load();
+      };
+
       const apply = () => {
         backdrop.style.opacity = view.o;
         backdrop.style.visibility = view.o > 0.01 ? "visible" : "hidden";
         video.style.filter = `blur(${view.b.toFixed(2)}px)`;
         video.style.transform = `scale(${view.k.toFixed(4)})`;
         dim.style.opacity = view.d;
-        shade.style.opacity = view.l;
-        label.style.opacity = view.l;
+        // the bottom shade belongs to the text, so it goes away with it
+        shade.style.opacity = view.l * view.h;
+        label.style.opacity = view.l * view.h;
         label.style.transform = `translate3d(0, ${((1 - view.l) * 28).toFixed(2)}px, 0)`;
 
         if (projectsEl) {
@@ -99,6 +106,7 @@ export default function Showreel() {
         const shouldPlay = view.o > 0.01 && view.d < 0.995;
         if (shouldPlay && !playing) {
           playing = true;
+          warm();
           video.play().catch(() => {});
         } else if (!shouldPlay && playing) {
           playing = false;
@@ -117,7 +125,7 @@ export default function Showreel() {
           ...t,
           duration: 0.7,
           ease: "power3.out",
-          overwrite: true,
+          overwrite: "auto",
           onUpdate: apply,
         });
       };
@@ -136,6 +144,17 @@ export default function Showreel() {
         fillTo.forEach((to, i) => to(clamp(p - i)));
       };
 
+      const resetPhrases = () => {
+        phrases.forEach((words, i) => {
+          gsap.set(words, {
+            yPercent: i === 0 ? 0 : HIDDEN,
+            rotate: 0,
+            opacity: i === 0 ? 1 : 0,
+            transformOrigin: "0% 100%",
+          });
+        });
+      };
+
       const settle = () => {
         phrases.forEach((words, i) => {
           if (i === current) return;
@@ -144,7 +163,7 @@ export default function Showreel() {
       };
 
       const run = contextSafe(() => {
-        if (busy || wanted === current) return;
+        if (finished || busy || wanted === current) return;
 
         const from = current;
         const to = wanted;
@@ -194,20 +213,64 @@ export default function Showreel() {
       });
 
       const request = (index) => {
+        if (finished) return;
         wanted = index;
         if (busy && tl && wanted !== current) tl.timeScale(2);
         run();
       };
 
-      const build = contextSafe(() => {
-        const projects = document.querySelector("#projects");
+      // Retire the text: fade it out once and ignore every later scroll update.
+      const finish = () => {
+        if (finished) return;
+        finished = true;
 
-        if (!projects) {
-          if (tries++ < 60) timer = setTimeout(build, 100);
+        if (reduce) {
+          view.h = 0;
+          apply();
           return;
         }
+        gsap.to(view, {
+          h: 0,
+          duration: 0.25,
+          ease: "power2.out",
+          overwrite: "auto",
+          onUpdate: apply,
+        });
+      };
+
+      // Bring the text back, but only while the section is fully off-screen
+      // below the viewport, so the user never sees it pop in.
+      const reset = () => {
+        if (!finished) return;
+        finished = false;
+
+        if (tl) {
+          tl.kill();
+          tl = null;
+        }
+        busy = false;
+        current = 0;
+        wanted = 0;
+
+        gsap.killTweensOf(view, "h");
+        view.h = 1;
+        resetPhrases();
+        fillTo.forEach((to) => to(0));
+        apply();
+      };
+
+      const build = () => {
+        const projects = document.querySelector("#projects");
+        if (!projects) return;
 
         projectsEl = projects;
+
+        ScrollTrigger.create({
+          trigger: projects,
+          start: "top 250%",
+          once: true,
+          onEnter: warm,
+        });
 
         const make = (trigger, start, end, key) =>
           ScrollTrigger.create({
@@ -221,7 +284,9 @@ export default function Showreel() {
 
         make(projects, "top bottom", "top 60%", "a");
         make(projects, "bottom 90%", "bottom top", "u");
-        make(section, "bottom 70%", "bottom 10%", "r");
+        // the dim happens early, so the fixed video is already the dark
+        // texture before the contact content appears
+        make(section, "bottom 100%", "bottom 40%", "r");
 
         const indexFrom = (self) =>
           Math.min(
@@ -229,7 +294,12 @@ export default function Showreel() {
             Math.floor(self.progress * PHRASES.length),
           );
 
-        const sync = (self) => {
+        const onProgress = (self) => {
+          if (finished) return; // retired: no phrase changes, no fills
+          if (self.progress >= HIDE_AT) {
+            finish();
+            return;
+          }
           request(indexFrom(self));
           syncFills(self);
         };
@@ -238,31 +308,34 @@ export default function Showreel() {
           trigger: section,
           start: "top top",
           end: "bottom bottom",
-          onUpdate: sync,
-          onRefresh: sync,
+          onUpdate: onProgress,
+          onRefresh: onProgress,
+        });
+
+        // Re-arm only when the section is completely below the viewport.
+        ScrollTrigger.create({
+          trigger: section,
+          start: "top bottom",
+          onLeaveBack: reset,
+          onRefresh: (self) => {
+            if (self.progress === 0) reset();
+          },
         });
 
         ScrollTrigger.refresh();
-      });
+      };
 
-      phrases.forEach((words, i) => {
-        gsap.set(words, {
-          yPercent: i === 0 ? 0 : HIDDEN,
-          rotate: 0,
-          opacity: i === 0 ? 1 : 0,
-          transformOrigin: "0% 100%",
-        });
-      });
+      resetPhrases();
       gsap.set(fills, { scaleX: 0, transformOrigin: "0% 50%" });
 
       apply();
       build();
 
       return () => {
-        clearTimeout(timer);
         video.pause();
         setMask(projectsEl, "");
         if (tl) tl.kill();
+        gsap.killTweensOf(view);
         gsap.killTweensOf(allWords);
       };
     },
@@ -282,7 +355,7 @@ export default function Showreel() {
           muted
           loop
           playsInline
-          preload="auto"
+          preload="none"
           className="absolute inset-0 h-full w-full object-cover will-change-[filter,transform]"
         />
         <div
@@ -315,7 +388,7 @@ export default function Showreel() {
                       key={text}
                       data-phrase
                       aria-hidden="true"
-                      className="pointer-events-none col-start-1 row-start-1 max-w-4xl text-balance text-[2.6rem] font-medium leading-[1] tracking-[-0.045em] text-white sm:text-7xl lg:text-6xl"
+                      className="pointer-events-none col-start-1 row-start-1 max-w-4xl text-balance text-[clamp(2rem,1.2rem+3.6vw,4rem)] font-medium leading-[1] tracking-[-0.045em] text-white"
                     >
                       {text.split(" ").map((w, i) => (
                         <span
@@ -336,7 +409,7 @@ export default function Showreel() {
 
                 <div
                   aria-hidden="true"
-                  className="mt-10 grid w-full max-w-xl gap-2 sm:mt-14 sm:gap-3"
+                  className="mt-8 grid w-full max-w-xl gap-2 sm:mt-12 sm:gap-3"
                   style={{
                     gridTemplateColumns: `repeat(${PHRASES.length}, minmax(0, 1fr))`,
                   }}

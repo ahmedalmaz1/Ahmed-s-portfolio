@@ -8,33 +8,34 @@ import {
   useRef,
   useState,
 } from "react";
-import Link from "next/link";
+import TransitionLink from "@/components/TransitionLink";
 import Image from "next/image";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
+import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 import { useLenis } from "@/components/SmoothScroll";
-import { useGoBack } from "./ScrollRestoration";
-import ImageTile from "./ImageTile";
-import YouTubeEmbed from "./YouTubeEmbed";
-import Lightbox from "./Lightbox";
+import { onReveal } from "@/components/PageTransition";
+import { useGoBack } from "@/hooks/useGoBack";
+import { pad } from "@/lib/format";
+import ImageTile from "@/components/project/ImageTile";
+import YouTubeEmbed from "@/components/project/YouTubeEmbed";
+import Lightbox from "@/components/project/Lightbox";
 
-gsap.registerPlugin(ScrollTrigger, useGSAP);
-
-/* ---------- constants ---------- */
 const DESKTOP_QUERY =
   "(min-width: 1024px) and (prefers-reduced-motion: no-preference)";
-const SHOT_H = "[--h:62svh] sm:[--h:68svh] lg:[--h:86svh]";
-const CARD_H = "h-[34svh] sm:h-[40svh] lg:h-[54svh]";
+const MOBILE_QUERY =
+  "(max-width: 1023.98px) and (prefers-reduced-motion: no-preference)";
+const DESKTOP_WIDTH = "(min-width: 1024px)";
+
+const SHOT_H = "lg:[--h:86svh]";
+
+const CARD_H =
+  "h-[24svh] min-h-40 sm:h-[28svh] lg:h-[calc(var(--media-w)*9/16)] lg:min-h-0";
 const PACE = 1.5;
 const DIM = 0.6;
 const GLYPH_ON = "#050a0f";
 const GLYPH_OFF = "#ffffff";
 
-const pad = (n) => String(n).padStart(2, "0");
-
-/* ---------- small static pieces (memoized: never re-render on lightbox toggle) ---------- */
-const Icon = memo(function Icon({ children, size = 16, fill = false }) {
+/* ---------- small static pieces ---------- */
+function Icon({ children, size = 16, fill = false }) {
   return (
     <svg
       width={size}
@@ -50,7 +51,7 @@ const Icon = memo(function Icon({ children, size = 16, fill = false }) {
       {children}
     </svg>
   );
-});
+}
 
 const Toolkit = memo(function Toolkit({ tools }) {
   if (!tools?.length) return null;
@@ -75,37 +76,36 @@ const Toolkit = memo(function Toolkit({ tools }) {
 
 const NextCard = memo(function NextCard({ next }) {
   return (
-    <Link
+    <TransitionLink
       href={next.href}
       data-reveal
-      className={`group relative block w-[86vw] overflow-hidden rounded-[1.25rem] bg-bg sm:w-[70vw] sm:rounded-[1.75rem] lg:w-[60vw] lg:rounded-[2.5rem] ${CARD_H}`}
+      className={`group relative block w-full overflow-hidden rounded-none bg-bg lg:w-(--media-w) lg:rounded-[2.5rem] ${CARD_H}`}
     >
       <Image
         src={next.image}
         alt=""
         fill
-        sizes="(min-width: 1024px) 60vw, 86vw"
+        sizes="(min-width: 1024px) 60vw, 100vw"
         className="object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-105"
       />
+      {/* mobile layer: even dark tint so the text is always readable */}
+      <span className="absolute inset-0 bg-[#050a0f]/55 lg:bg-transparent" />
       <span className="absolute inset-0 bg-linear-to-r from-[#050a0f]/90 via-[#050a0f]/40 to-transparent" />
-      <span className="absolute inset-0 flex flex-col justify-center gap-2 p-5 sm:gap-3 sm:p-10 lg:p-16">
-        <span className="text-xs uppercase tracking-[0.4em] text-accent">
+
+      <span className="absolute inset-0 flex flex-col justify-center gap-1.5 p-4 sm:gap-2.5 sm:p-8 lg:gap-3 lg:p-12">
+        <span className="text-[11px] uppercase tracking-[0.4em] text-accent sm:text-xs">
           Next project
         </span>
-        <span className="text-3xl font-light leading-[1.05] tracking-tight sm:text-5xl lg:text-7xl">
+        <span className="font-display text-2xl font-light leading-[1.05] tracking-tight sm:text-4xl lg:text-5xl">
           {next.title}
         </span>
-        <span className="mt-1 inline-flex w-fit items-center gap-3 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-[#050a0f] transition-colors duration-300 group-hover:bg-accent/85 sm:mt-3">
+
+        {/* button: label only */}
+        <span className="mt-1.5 inline-flex w-fit items-center rounded-full border border-white/25 bg-white/10 px-5 py-2 text-xs font-medium text-white backdrop-blur-md transition-colors duration-300 group-hover:border-accent group-hover:bg-accent group-hover:text-[#050a0f] sm:mt-2 sm:px-6 sm:py-2.5 sm:text-sm">
           View project
-          <span className="transition-transform duration-300 group-hover:translate-x-1">
-            <Icon>
-              <path d="M5 12h14" />
-              <path d="m13 6 6 6-6 6" />
-            </Icon>
-          </span>
         </span>
       </span>
-    </Link>
+    </TransitionLink>
   );
 });
 
@@ -128,24 +128,22 @@ export default function ProjectDetail({ project, next }) {
     );
   }, [project.images]);
 
-  // Always start a project at the very beginning. The home page's old scroll
-  // value (kept inside Lenis) would otherwise be applied once the tall
-  // horizontal-scroll wrapper gets its height, making the page "fall" from the end.
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
     lenisRef.current?.scrollTo(0, { immediate: true, force: true });
   }, [lenisRef, project.slug]);
 
-  // pause smooth scroll while the lightbox is open
+  // freeze page scrolling only while the lightbox is open (never on mount,
+  // so a running page transition keeps control of Lenis)
   useEffect(() => {
     const lenis = lenisRef.current;
-    if (!lenis) return;
-    lightbox ? lenis.stop() : lenis.start();
+    if (!lightbox || !lenis) return;
+    lenis.stop();
     return () => lenis.start();
   }, [lightbox, lenisRef]);
 
   useGSAP(
-    () => {
+    (context, contextSafe) => {
       const stageEl = stage.current;
       const trackEl = track.current;
       const wrapEl = wrap.current;
@@ -155,27 +153,34 @@ export default function ProjectDetail({ project, next }) {
         "(prefers-reduced-motion: reduce)",
       ).matches;
 
-      /* intro (all screen sizes) */
+      let offReveal = () => {};
       if (!reduce) {
-        gsap.from("[data-intro-line]", {
-          yPercent: 115,
-          duration: 1.4,
-          ease: "power4.out",
-          stagger: 0.1,
-          delay: 0.15,
+        gsap.set("[data-intro-line]", { yPercent: 115 });
+        gsap.set("[data-intro]", { opacity: 0, y: 24 });
+
+        const playIntro = contextSafe(() => {
+          gsap.to("[data-intro-line]", {
+            yPercent: 0,
+            duration: 1.4,
+            ease: "power4.out",
+            stagger: 0.1,
+            delay: 0.15,
+          });
+          gsap.to("[data-intro]", {
+            opacity: 1,
+            y: 0,
+            duration: 1.2,
+            ease: "power4.out",
+            stagger: 0.12,
+            delay: 0.45,
+          });
         });
-        gsap.from("[data-intro]", {
-          opacity: 0,
-          y: 24,
-          duration: 1.2,
-          ease: "power4.out",
-          stagger: 0.12,
-          delay: 0.45,
-        });
+        offReveal = onReveal(playIntro);
       }
 
-      /* desktop: vertical scroll drives a horizontal track */
       const mm = gsap.matchMedia();
+
+      /* ---------- desktop: vertical scroll drives a horizontal track ---------- */
       mm.add(DESKTOP_QUERY, () => {
         pinned.current = true;
         stageEl.style.overflowX = "hidden";
@@ -347,9 +352,52 @@ export default function ProjectDetail({ project, next }) {
         };
       });
 
-      return () => mm.revert();
+      /* ---------- mobile / tablet: plain vertical page, light reveals ---------- */
+      mm.add(MOBILE_QUERY, () => {
+        gsap.utils.toArray("[data-shot]", trackEl).forEach((shot) => {
+          const frame = shot.querySelector("[data-frame]");
+          const media = shot.querySelector("[data-media]");
+          const st = { trigger: shot, start: "top 88%", once: true };
+
+          gsap.fromTo(
+            frame,
+            { clipPath: "inset(10% 0% 0% 0%)", opacity: 0 },
+            {
+              clipPath: "inset(0% 0% 0% 0%)",
+              opacity: 1,
+              duration: 1.1,
+              ease: "power3.out",
+              scrollTrigger: st,
+            },
+          );
+          gsap.fromTo(
+            media,
+            { scale: 1.15 },
+            { scale: 1, duration: 1.4, ease: "power3.out", scrollTrigger: st },
+          );
+        });
+
+        gsap.utils.toArray("[data-reveal]", trackEl).forEach((item) => {
+          gsap.fromTo(
+            item,
+            { opacity: 0, y: 32 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 1,
+              ease: "power3.out",
+              scrollTrigger: { trigger: item, start: "top 98%", once: true },
+            },
+          );
+        });
+      });
+
+      return () => {
+        offReveal();
+        mm.revert();
+      };
     },
-    { scope: wrap, dependencies: [project.title], revertOnUpdate: true },
+    { scope: wrap, dependencies: [project.slug], revertOnUpdate: true },
   );
 
   const goToVideo = useCallback(() => {
@@ -357,6 +405,7 @@ export default function ProjectDetail({ project, next }) {
     if (!panel) return;
 
     if (pinned.current) {
+      // desktop, pinned: map the panel position to a vertical scroll offset
       const dist = track.current.scrollWidth - window.innerWidth;
       const left =
         panel.offsetLeft - (window.innerWidth - panel.offsetWidth) / 2;
@@ -364,18 +413,24 @@ export default function ProjectDetail({ project, next }) {
         wrap.current.offsetTop + Math.min(Math.max(left, 0), dist) / PACE;
       if (lenisRef.current) lenisRef.current.scrollTo(y, { duration: 1.8 });
       else window.scrollTo({ top: y, behavior: "smooth" });
-    } else {
+    } else if (window.matchMedia(DESKTOP_WIDTH).matches) {
+      // desktop with reduced motion: native horizontal scroll
       stage.current.scrollTo({
         left: Math.max(panel.offsetLeft - 16, 0),
         behavior: "smooth",
       });
+    } else if (lenisRef.current) {
+      // mobile / tablet: the page is vertical
+      lenisRef.current.scrollTo(panel, { offset: -80, duration: 1.4 });
+    } else {
+      panel.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [lenisRef]);
 
   return (
     <main className="grain bg-bg text-white">
       {/* fixed top controls */}
-      <div className="pointer-events-none fixed inset-x-0 top-4 z-40 flex items-start justify-between px-4 sm:top-6 sm:px-6 lg:px-12">
+      <div className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+1.5rem)] z-40 flex items-start justify-between px-4 sm:top-6 sm:px-6 lg:px-12">
         <button
           type="button"
           onClick={goBack}
@@ -408,7 +463,7 @@ export default function ProjectDetail({ project, next }) {
         <div
           ref={counter}
           aria-hidden="true"
-          className="pointer-events-none fixed bottom-7 left-12 z-40 hidden items-baseline gap-2 text-xs tabular-nums tracking-[0.3em] text-white opacity-0 mix-blend-difference lg:flex"
+          className="pointer-events-none fixed bottom-7 left-32 z-40 hidden items-baseline gap-2 text-xs tabular-nums tracking-[0.3em] text-white opacity-0 mix-blend-difference lg:flex"
         >
           <span className="inline-block overflow-hidden">
             <span data-current className="inline-block">
@@ -420,21 +475,21 @@ export default function ProjectDetail({ project, next }) {
       )}
 
       <div ref={wrap}>
+        {/* < lg: normal flow.  lg+: sticky stage with a horizontal track */}
         <div
           ref={stage}
-          tabIndex={0}
           role="region"
           aria-label={`${project.title} project details`}
-          className="sticky top-0 h-svh overflow-x-auto overflow-y-hidden overscroll-x-contain outline-none [scrollbar-width:none] max-lg:snap-x max-lg:snap-proximity [&::-webkit-scrollbar]:hidden"
+          className="outline-none [scrollbar-width:none] lg:sticky lg:top-0 lg:h-svh lg:overflow-x-auto lg:overflow-y-hidden lg:overscroll-x-contain [&::-webkit-scrollbar]:hidden"
         >
           <div
             ref={track}
-            className="relative flex h-full w-max items-center gap-5 px-4 sm:gap-8 sm:px-6 lg:gap-14 lg:px-[6vw] lg:will-change-transform"
+            className="relative flex w-full flex-col gap-12 px-4 pb-0 pt-[calc(env(safe-area-inset-top)+6.5rem)] sm:gap-16 sm:px-6 sm:pt-36 lg:h-full lg:w-max lg:flex-row lg:items-center lg:gap-14 lg:px-[6vw] lg:py-0 lg:will-change-transform lg:[--media-w:min(104svh,60vw)]"
           >
             {/* intro panel */}
             <section
               data-panel
-              className="flex w-[86vw] shrink-0 flex-col justify-center max-lg:snap-start sm:w-[32rem] lg:w-[44rem]"
+              className="flex w-full shrink-0 flex-col justify-center py-4 sm:py-6 lg:w-[44rem] lg:py-0"
             >
               <p
                 data-intro
@@ -462,26 +517,29 @@ export default function ProjectDetail({ project, next }) {
 
               <p
                 data-intro
-                className="mt-5 max-w-lg text-sm leading-relaxed text-neutral-400 sm:mt-6 sm:text-base lg:text-lg"
+                className="mt-6 max-w-lg text-sm leading-relaxed text-neutral-400 sm:mt-7 sm:text-base lg:text-lg"
               >
                 {project.description}
               </p>
 
               <Toolkit tools={project.tools} />
 
+              {/* scroll hint: desktop only */}
               <p
                 data-intro
-                className="mt-8 flex items-center gap-4 text-[11px] uppercase tracking-[0.35em] text-neutral-500 sm:mt-10"
+                className="mt-10 hidden items-center gap-4 text-[11px] uppercase tracking-[0.35em] text-neutral-500 lg:flex"
               >
                 <span className="h-px w-12 bg-accent/60" />
-                <span className="lg:hidden">Swipe</span>
-                <span className="hidden lg:inline">Scroll</span>
+                <span>Scroll</span>
               </p>
             </section>
 
             {/* screenshots */}
             {shots.length > 0 && (
-              <div data-shots className="flex shrink-0">
+              <div
+                data-shots
+                className="flex w-full shrink-0 flex-col gap-4 sm:gap-6 lg:w-auto lg:flex-row lg:gap-0"
+              >
                 {shots.map((s, i) => (
                   <ImageTile
                     key={s.src}
@@ -502,7 +560,7 @@ export default function ProjectDetail({ project, next }) {
               <div
                 data-panel
                 data-video
-                className="w-[86vw] shrink-0 max-lg:snap-center sm:w-[64vw] lg:w-[min(122svh,66vw)]"
+                className="w-full shrink-0 lg:w-(--media-w)"
               >
                 <div data-reveal>
                   <YouTubeEmbed
@@ -515,8 +573,8 @@ export default function ProjectDetail({ project, next }) {
               </div>
             )}
 
-            {/* next project */}
-            <div data-panel className="shrink-0 max-lg:snap-center">
+            {/* next project: full-bleed on mobile (cancels the track's side padding) */}
+            <div data-panel className="-mx-4 shrink-0 sm:-mx-6 lg:mx-0">
               <NextCard next={next} />
             </div>
           </div>
