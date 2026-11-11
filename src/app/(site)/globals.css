@@ -102,6 +102,20 @@
   }
 }
 
+/* ---------- hero scroll cue (Hero.js) ---------- */
+.scroll-cue-dot {
+  animation: scroll-cue 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes scroll-cue {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(200%);
+  }
+}
+
 /* ---------- sound toggle (SoundToggle.js) ---------- */
 .snd {
   --ring-w: 1px;

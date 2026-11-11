@@ -7,12 +7,16 @@ const SCROLL = 3500; // px of scrolling that plays the whole video (lower = fast
 const FOLLOW = 0.2; // 0..1, higher = video follows the scroll tighter
 const EPS = 1 / 60; // ignore time differences smaller than one frame
 
+const CUE_FADE = 260; // px of scrolling after which the scroll cue is gone
+
 // fallback: true only when the video is unavailable (reduced motion, save-data, error)
-export default function Hero({ src, fallback = false }) {
+// intro: becomes true when the loader is gone; the scroll cue appears then
+export default function Hero({ src, fallback = false, intro = false }) {
   const root = useRef(null);
   const media = useRef(null);
   const video = useRef(null);
   const tint = useRef(null);
+  const cue = useRef(null);
   const [ready, setReady] = useState(false); // first video frame decoded
 
   useGSAP(
@@ -37,6 +41,23 @@ export default function Hero({ src, fallback = false }) {
         tint.current,
         { opacity: 0 },
         { opacity: 1, ease: "none", scrollTrigger: cardRange },
+      );
+
+      // the cue leaves as soon as the user starts scrolling
+      gsap.fromTo(
+        cue.current,
+        { opacity: 1, y: 0 },
+        {
+          opacity: 0,
+          y: -12,
+          ease: "none",
+          scrollTrigger: {
+            trigger: root.current,
+            start: "top top",
+            end: `+=${CUE_FADE}`,
+            scrub: true,
+          },
+        },
       );
 
       if (!src || !v) return;
@@ -117,6 +138,20 @@ export default function Hero({ src, fallback = false }) {
           ref={tint}
           className="grain pointer-events-none absolute inset-0 bg-bg opacity-0"
         />
+
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-x-0 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-10 flex justify-center transition-opacity duration-1000 ease-out sm:bottom-8 ${intro ? "opacity-100 delay-700" : "opacity-0"}`}
+        >
+          <div ref={cue} className="flex flex-col items-center gap-3">
+            <span className="text-[0.6875rem] font-medium tracking-[0.4em] text-white/70 uppercase [text-indent:0.4em]">
+              Scroll
+            </span>
+            <span className="relative block h-12 w-px overflow-hidden bg-white/20 sm:h-14">
+              <span className="scroll-cue-dot absolute inset-x-0 top-0 h-1/2 bg-linear-to-b from-transparent via-white to-transparent" />
+            </span>
+          </div>
+        </div>
       </section>
     </div>
   );

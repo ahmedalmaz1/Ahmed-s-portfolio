@@ -348,7 +348,7 @@ export default function Contact() {
             <span
               key={i}
               aria-hidden="true"
-              className="mr-[0.25em] inline-block overflow-hidden pb-[0.12em] align-top"
+              className="uppercase font-display font-semibold mr-[0.25em] inline-block overflow-hidden pb-[0.12em] align-top"
             >
               <span data-line className="inline-block">
                 {w}

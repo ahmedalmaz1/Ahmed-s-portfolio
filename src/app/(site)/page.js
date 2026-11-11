@@ -39,7 +39,7 @@ export default function Home() {
       )}
 
       <main>
-        <Hero src={src} fallback={progress >= 1 && !src} />
+        <Hero src={src} fallback={progress >= 1 && !src} intro={loaded} />
         <Nav visible={loaded} />
         <Sections />
       </main>

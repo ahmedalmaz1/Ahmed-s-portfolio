@@ -7,7 +7,8 @@ const TITLE = "Worlds in motion";
 const BG = "#050a0f";
 const STEP = 90;
 const HIDDEN = 130;
-const HIDE_AT = 0.97;
+// the text starts leaving here (share of the section scroll) and is gone at 1
+const FADE_FROM = 0.8;
 const PHRASES = [
   "Worlds designed with intention. Built to be experienced.",
   "Some worlds exist only in imagination. Until someone brings them to life.",
@@ -38,7 +39,7 @@ export default function Showreel() {
       );
       const allWords = phrases.flat();
 
-      const progress = { a: 0, u: 0, r: 0 };
+      const progress = { a: 0, u: 0, r: 0, f: 0 };
       const view = { o: 0, b: 0, d: 1, k: 1.1, l: 0, m: 0, h: 1 };
       let playing = false;
       let warmed = false;
@@ -46,22 +47,24 @@ export default function Showreel() {
       let current = 0;
       let wanted = 0;
       let busy = false;
+      let finished = false; // text retired: stays hidden when scrolling back
       let tl = null;
-      let finished = false; // true once the text has been retired
 
       const maxBlur = () => (window.innerWidth < 1024 ? 8 : 14);
       const clamp = (v) => Math.min(1, Math.max(0, v));
+      const smooth = (v) => v * v * (3 - 2 * v);
 
       const target = () => {
         const mb = maxBlur();
-        const { a, u, r } = progress;
+        const { a, u, r, f } = progress;
         return {
-          o: a * (1 - clamp((r - 0.9) / 0.1)),
+          o: a * (1 - clamp((r - 0.85) / 0.15)),
           b: (1 - u) * mb,
-          d: clamp(1 - u + r * 1.15),
+          d: clamp(1 - u + smooth(r) * 1.15),
           k: 1.1 - 0.1 * u + 0.1 * r,
-          l: clamp((u - 0.6) / 0.4) * clamp(1 - r * 3),
+          l: clamp((u - 0.6) / 0.4),
           m: u,
+          h: 1 - smooth(f),
         };
       };
 
@@ -89,7 +92,7 @@ export default function Showreel() {
         // the bottom shade belongs to the text, so it goes away with it
         shade.style.opacity = view.l * view.h;
         label.style.opacity = view.l * view.h;
-        label.style.transform = `translate3d(0, ${((1 - view.l) * 28).toFixed(2)}px, 0)`;
+        label.style.transform = `translate3d(0, ${((1 - view.l) * 28 - (1 - view.h) * 20).toFixed(2)}px, 0)`;
 
         if (projectsEl) {
           if (view.m > 0.001 && progress.r === 0) {
@@ -219,27 +222,8 @@ export default function Showreel() {
         run();
       };
 
-      // Retire the text: fade it out once and ignore every later scroll update.
-      const finish = () => {
-        if (finished) return;
-        finished = true;
-
-        if (reduce) {
-          view.h = 0;
-          apply();
-          return;
-        }
-        gsap.to(view, {
-          h: 0,
-          duration: 0.25,
-          ease: "power2.out",
-          overwrite: "auto",
-          onUpdate: apply,
-        });
-      };
-
-      // Bring the text back, but only while the section is fully off-screen
-      // below the viewport, so the user never sees it pop in.
+      // Bring the text back only while the section is completely below the
+      // viewport, so it never pops in when scrolling back up.
       const reset = () => {
         if (!finished) return;
         finished = false;
@@ -252,6 +236,7 @@ export default function Showreel() {
         current = 0;
         wanted = 0;
 
+        progress.f = 0;
         gsap.killTweensOf(view, "h");
         view.h = 1;
         resetPhrases();
@@ -284,9 +269,10 @@ export default function Showreel() {
 
         make(projects, "top bottom", "top 60%", "a");
         make(projects, "bottom 90%", "bottom top", "u");
-        // the dim happens early, so the fixed video is already the dark
-        // texture before the contact content appears
-        make(section, "bottom 100%", "bottom 40%", "r");
+        // The dim starts while the text is still leaving (before the section is
+        // released) and spans a full screen of scroll, so the video melts into
+        // the page texture before the contact content appears.
+        make(section, "bottom 140%", "bottom 40%", "r");
 
         const indexFrom = (self) =>
           Math.min(
@@ -295,13 +281,12 @@ export default function Showreel() {
           );
 
         const onProgress = (self) => {
-          if (finished) return; // retired: no phrase changes, no fills
-          if (self.progress >= HIDE_AT) {
-            finish();
-            return;
-          }
+          if (finished) return;
+          progress.f = clamp((self.progress - FADE_FROM) / (1 - FADE_FROM));
+          if (progress.f >= 1) finished = true;
           request(indexFrom(self));
           syncFills(self);
+          update();
         };
 
         ScrollTrigger.create({
@@ -312,7 +297,6 @@ export default function Showreel() {
           onRefresh: onProgress,
         });
 
-        // Re-arm only when the section is completely below the viewport.
         ScrollTrigger.create({
           trigger: section,
           start: "top bottom",
