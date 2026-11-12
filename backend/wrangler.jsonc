@@ -13,4 +13,10 @@
 			"database_id": "b948e15f-b77a-4665-9b84-adcf430971c8",
 		},
 	],
+	"r2_buckets": [
+		{
+			"bucket_name": "portfolio-media",
+			"binding": "MEDIA"
+		}
+	],
 }
