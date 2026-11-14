@@ -1,4 +1,4 @@
-// End-to-end smoke test against a running API (local `wrangler dev` or a deployed Worker).
+﻿// End-to-end smoke test against a running API (local `wrangler dev` or a deployed Worker).
 //   node scripts/smoke.mjs http://localhost:8787 <ADMIN_PASSWORD>
 //   node scripts/smoke.mjs https://api.example.com <ADMIN_PASSWORD> --skip-lockout     (deployed API)
 // Creates and removes its own projects, links and files. The only leftovers are the profile
@@ -68,12 +68,12 @@ check('admin route without token -> 401', r.status === 401, `(got ${r.status})`)
 r = await api('GET', '/admin/projects', { auth: false, headers: { Authorization: 'Bearer garbage' } });
 check('admin route with bad token -> 401', r.status === 401, `(got ${r.status})`);
 
-r = await api('POST', '/login', { json: { password: 'definitely-wrong' }, auth: false, headers: { 'CF-Connecting-IP': '203.0.113.7' } });
+r = await api('POST', '/login', { json: { password: 'definitely-wrong' }, auth: false });
 check('wrong password -> 401', r.status === 401, `(got ${r.status})`);
 r = await api('POST', '/login', { json: {}, auth: false });
 check('login without password -> 400', r.status === 400, `(got ${r.status})`);
 
-r = await api('POST', '/login', { json: { password }, auth: false, headers: { 'CF-Connecting-IP': '203.0.113.8' } });
+r = await api('POST', '/login', { json: { password }, auth: false });
 check('correct password -> token', r.status === 200 && typeof r.data.token === 'string');
 token = r.data.token;
 

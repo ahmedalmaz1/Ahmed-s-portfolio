@@ -2,11 +2,13 @@
 	"name": "ahmed-portfolio-api",
 	"main": "src/index.js",
 	"compatibility_date": "2026-10-01",
+	"workers_dev": false,
+	"routes": [{ "pattern": "api.ahmedalmaz.com", "custom_domain": true }],
 	"account_id": "6afb515bfd2b60d6e83ff662b480fc13",
 	"observability": { "enabled": true },
 	"vars": {
 		// Browser origins allowed to call the API (comma separated). Add the real domain before launch.
-		"ALLOWED_ORIGINS": "http://localhost:3000,https://ahmed-s-portfolio-pied.vercel.app"
+		"ALLOWED_ORIGINS": "http://localhost:3000,https://ahmed-s-portfolio-pied.vercel.app",
 		// Optional: serve media from a custom R2 domain (e.g. https://media.ahmedalmaz.com) instead of /media
 		// "MEDIA_BASE_URL": "https://media.ahmedalmaz.com"
 	},
@@ -14,8 +16,8 @@
 		{
 			"binding": "portfolio_db",
 			"database_name": "portfolio-db",
-			"database_id": "b948e15f-b77a-4665-9b84-adcf430971c8"
-		}
+			"database_id": "b948e15f-b77a-4665-9b84-adcf430971c8",
+		},
 	],
-	"r2_buckets": [{ "binding": "MEDIA", "bucket_name": "portfolio-media" }]
+	"r2_buckets": [{ "binding": "MEDIA", "bucket_name": "portfolio-media" }],
 }
