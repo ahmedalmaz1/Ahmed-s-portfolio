@@ -19,6 +19,27 @@ const securityHeaders = [
   },
 ];
 
+// Images uploaded from the admin panel are served by the API (or a custom media
+// domain) and optimised by next/image, so their host must be allowed here.
+function remotePattern(value) {
+  try {
+    const url = new URL(value);
+    return {
+      protocol: url.protocol.replace(":", ""),
+      hostname: url.hostname,
+      ...(url.port && { port: url.port }),
+      pathname: "/**",
+    };
+  } catch {
+    return null;
+  }
+}
+const mediaHosts = [process.env.NEXT_PUBLIC_API_URL, process.env.NEXT_PUBLIC_MEDIA_URL]
+  .filter(Boolean)
+  .map(remotePattern)
+  .filter(Boolean);
+const isDev = process.env.NODE_ENV !== "production";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
@@ -29,6 +50,11 @@ const nextConfig = {
     // allows the values listed here)
     qualities: [75, 90, 95],
     minimumCacheTTL: DAY * 30,
+    remotePatterns: isDev
+      ? [...mediaHosts, { protocol: "http", hostname: "localhost", port: "8787", pathname: "/**" }]
+      : mediaHosts,
+    // `wrangler dev` runs on localhost, which next/image blocks unless allowed
+    dangerouslyAllowLocalIP: isDev,
   },
 
   async headers() {

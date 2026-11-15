@@ -2,10 +2,9 @@
 // - adds the bearer token, - normalises errors, - sends the user back to the
 //   login page when the session expires.
 
-// In development the API defaults to `wrangler dev`; in production the variable is required.
-export const API_URL = (
-  process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "" : "http://localhost:8787")
-).replace(/\/$/, "");
+import { API_URL } from "@/lib/config";
+
+export { API_URL };
 
 const TOKEN_KEY = "admin.token";
 const EXPIRED_KEY = "admin.expired";
@@ -130,7 +129,23 @@ export async function api(path, { method = "GET", json, auth = true, signal } = 
     throw new ApiError(401, "Session expired");
   }
   if (!res.ok) throw await toError(res);
+  if (auth && method !== "GET") requestRevalidate();
   return res.status === 204 ? null : res.json();
+}
+
+// ---- keep the public site fresh --------------------------------------------
+// Every successful write asks the site to drop its cache. Calls are merged
+// (a gallery upload or a reorder can send several writes in a row).
+let revalidateTimer = null;
+function requestRevalidate() {
+  clearTimeout(revalidateTimer);
+  revalidateTimer = setTimeout(() => {
+    const token = getToken();
+    if (!token) return;
+    fetch("/api/revalidate", { method: "POST", headers: { Authorization: `Bearer ${token}` }, keepalive: true }).catch(() => {
+      /* not critical: the site also refreshes on its own every minute */
+    });
+  }, 400);
 }
 
 /**

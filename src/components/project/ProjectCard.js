@@ -98,14 +98,16 @@ export default function ProjectCard({ project, index, priority = false }) {
         className="absolute inset-x-0 -top-[4%] h-[108%] will-change-transform"
       >
         <div className="absolute inset-0">
-          <Image
-            src={project.image}
-            alt={project.title}
-            fill
-            sizes="100vw"
-            priority={priority}
-            className="object-cover"
-          />
+          {project.image && (
+            <Image
+              src={project.image}
+              alt={project.title}
+              fill
+              sizes="100vw"
+              priority={priority}
+              className="object-cover"
+            />
+          )}
         </div>
       </div>
 

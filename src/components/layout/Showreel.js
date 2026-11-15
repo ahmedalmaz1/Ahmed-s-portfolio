@@ -2,7 +2,7 @@
 import { useRef } from "react";
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 
-const VIDEO_SRC = "/video.mp4";
+const DEFAULT_VIDEO = "/video.mp4";
 const TITLE = "Worlds in motion";
 const BG = "#050a0f";
 const STEP = 90;
@@ -15,7 +15,7 @@ const PHRASES = [
   "Every frame, a cinematic",
 ];
 
-export default function Showreel() {
+export default function Showreel({ src }) {
   const root = useRef(null);
   const videoRef = useRef(null);
 
@@ -335,7 +335,7 @@ export default function Showreel() {
       >
         <video
           ref={videoRef}
-          src={VIDEO_SRC}
+          src={src || DEFAULT_VIDEO}
           muted
           loop
           playsInline

@@ -4,11 +4,10 @@ import { gsap, useGSAP } from "@/lib/gsap";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import { onReveal } from "@/components/PageTransition";
-import { PROJECTS } from "@/data/projects";
 import { pad } from "@/lib/format";
 import ProjectCard from "@/components/project/ProjectCard";
 
-export default function ProjectsIndex() {
+export default function ProjectsIndex({ projects }) {
   const root = useRef(null);
 
   useGSAP(
@@ -73,14 +72,14 @@ export default function ProjectsIndex() {
               data-fade
               className="mt-8 flex items-center gap-4 text-xs uppercase tracking-[0.3em] text-neutral-400 opacity-0 sm:mt-10"
             >
-              <span>{pad(PROJECTS.length)} Projects</span>
+              <span>{pad(projects.length)} Projects</span>
               <span className="h-px flex-1 bg-white/15" />
             </div>
           </div>
         </header>
 
         <div className="mx-(--gutter) mt-10 flex flex-col gap-3 sm:mt-14 sm:gap-4 lg:gap-6">
-          {PROJECTS.map((p, i) => (
+          {projects.map((p, i) => (
             <ProjectCard key={p.slug} project={p} index={i} priority={i < 2} />
           ))}
         </div>

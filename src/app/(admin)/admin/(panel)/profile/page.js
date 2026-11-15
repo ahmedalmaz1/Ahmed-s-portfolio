@@ -69,7 +69,6 @@ function ProfileForm({ initial }) {
       setSaved(next);
       setForm(next);
       setOk(true);
-      // TODO(PR3): ask the public site to revalidate here
     } catch (err) {
       if (err instanceof ApiError) {
         setFields(err.fields);

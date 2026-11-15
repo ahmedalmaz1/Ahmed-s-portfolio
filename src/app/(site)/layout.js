@@ -8,7 +8,7 @@ import SoundManager from "@/components/SoundManager";
 import SoundToggle from "@/components/SoundToggle";
 import BackToHome from "@/components/BackTohome";
 import Cursor from "@/components/Cursor";
-import { PROJECTS } from "@/data/projects";
+import { getSite } from "@/lib/content";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 const display = Archivo({
@@ -27,24 +27,39 @@ const TITLE = `${SITE_NAME} | 3D environment and cinematic artist`;
 const DESCRIPTION =
   "3D environment and cinematic artist working in Unreal Engine 5 — real-time environments, lighting and cinematics.";
 
-export const metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: TITLE,
-  description: DESCRIPTION,
-  openGraph: {
-    type: "website",
-    siteName: SITE_NAME,
+// The share image is the first project's poster. If the API can't be reached
+// the page still renders, just without a share image.
+async function shareImages() {
+  try {
+    const { projects } = await getSite();
+    const image = projects.find((p) => p.image)?.image;
+    return image ? [image] : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function generateMetadata() {
+  const images = await shareImages();
+  return {
+    metadataBase: new URL(SITE_URL),
     title: TITLE,
     description: DESCRIPTION,
-    images: [PROJECTS[0].image],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: TITLE,
-    description: DESCRIPTION,
-    images: [PROJECTS[0].image],
-  },
-};
+    openGraph: {
+      type: "website",
+      siteName: SITE_NAME,
+      title: TITLE,
+      description: DESCRIPTION,
+      images,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: TITLE,
+      description: DESCRIPTION,
+      images,
+    },
+  };
+}
 
 export const viewport = {
   width: "device-width",

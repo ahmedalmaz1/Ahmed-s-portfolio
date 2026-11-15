@@ -72,7 +72,6 @@ function SocialForm({ links }) {
     else {
       setValues((v) => Object.fromEntries(PLATFORMS.map((p) => [p, next[p]?.url ?? v[p]])));
       setOk(true);
-      // TODO(PR3): ask the public site to revalidate here
     }
     setBusy(false);
   }

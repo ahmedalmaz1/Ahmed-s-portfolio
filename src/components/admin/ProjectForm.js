@@ -78,7 +78,6 @@ export default function ProjectForm({ project = null }) {
       setSaved(next);
       setForm(next);
       setOk(true);
-      // TODO(PR3): ask the public site to revalidate here
     } catch (err) {
       if (err instanceof ApiError) {
         const f = { ...err.fields };
