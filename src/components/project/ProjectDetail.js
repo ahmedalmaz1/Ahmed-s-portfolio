@@ -81,13 +81,15 @@ const NextCard = memo(function NextCard({ next }) {
       data-reveal
       className={`group relative block w-full overflow-hidden rounded-none bg-bg lg:w-(--media-w) lg:rounded-[2.5rem] ${CARD_H}`}
     >
-      <Image
-        src={next.image}
-        alt=""
-        fill
-        sizes="(min-width: 1024px) 60vw, 100vw"
-        className="object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-105"
-      />
+      {next.image && (
+        <Image
+          src={next.image}
+          alt=""
+          fill
+          sizes="(min-width: 1024px) 60vw, 100vw"
+          className="object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-105"
+        />
+      )}
       {/* mobile layer: even dark tint so the text is always readable */}
       <span className="absolute inset-0 bg-[#050a0f]/55 lg:bg-transparent" />
       <span className="absolute inset-0 bg-linear-to-r from-[#050a0f]/90 via-[#050a0f]/40 to-transparent" />
@@ -491,12 +493,14 @@ export default function ProjectDetail({ project, next }) {
               data-panel
               className="flex w-full shrink-0 flex-col justify-center py-4 sm:py-6 lg:w-[44rem] lg:py-0"
             >
-              <p
-                data-intro
-                className="text-xs uppercase tracking-[0.4em] text-accent"
-              >
-                {project.category}
-              </p>
+              {project.category && (
+                <p
+                  data-intro
+                  className="text-xs uppercase tracking-[0.4em] text-accent"
+                >
+                  {project.category}
+                </p>
+              )}
 
               <h1
                 aria-label={project.title}
@@ -546,7 +550,7 @@ export default function ProjectDetail({ project, next }) {
                     src={s.src}
                     width={s.width}
                     height={s.height}
-                    alt={`${project.title} — ${i + 1}`}
+                    alt={s.alt || `${project.title} — ${i + 1}`}
                     className={SHOT_H}
                     priority={i === 0}
                     onExpand={setLightbox}
@@ -574,9 +578,11 @@ export default function ProjectDetail({ project, next }) {
             )}
 
             {/* next project: full-bleed on mobile (cancels the track's side padding) */}
-            <div data-panel className="-mx-4 shrink-0 sm:-mx-6 lg:mx-0">
-              <NextCard next={next} />
-            </div>
+            {next && (
+              <div data-panel className="-mx-4 shrink-0 sm:-mx-6 lg:mx-0">
+                <NextCard next={next} />
+              </div>
+            )}
           </div>
         </div>
       </div>

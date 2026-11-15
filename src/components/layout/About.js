@@ -11,7 +11,8 @@ const BIO = [
   "From blockout and lighting to final cinematic camera work, I take scenes from the first idea to a polished shot that feels like a frame from a film.",
 ];
 
-export default function About() {
+export default function About({ name, bio, avatar }) {
+  const paragraphs = bio.length ? bio : BIO;
   const root = useRef(null);
   const statement = useRef(null);
 
@@ -138,8 +139,8 @@ export default function About() {
           >
             <div className="absolute inset-0 overflow-hidden rounded-full bg-gradient-to-b from-[#58514F] via-[#cfc4c1]/10 to-bg">
               <Image
-                src="/ahmedalmaz.png"
-                alt="Ahmed Almaz"
+                src={avatar || "/ahmedalmaz.png"}
+                alt={name}
                 fill
                 sizes="(max-width: 1024px) 56vw, 352px"
                 className="object-cover object-center brightness-90 contrast-105"
@@ -148,7 +149,7 @@ export default function About() {
           </div>
 
           <div className="space-y-6 text-base text-center md:text-left leading-relaxed text-neutral-400 sm:text-lg lg:col-span-7 lg:col-start-6">
-            {BIO.map((p, i) => (
+            {paragraphs.map((p, i) => (
               <p key={i} data-reveal className="opacity-0">
                 {p}
               </p>

@@ -2,22 +2,19 @@
 import { useEffect, useRef, useState } from "react";
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 
-const EMAIL = "hello@ahmedalmaz.com";
 const TITLE = "Let's build your next world together.";
 
-// Replace the placeholder links with the real profile URLs.
-const GMAIL = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(EMAIL)}`;
-const CHANNELS = [
-  { label: "Gmail", href: `mailto:${EMAIL}`, icon: "gmail" },
-  {
-    label: "ArtStation",
-    href: "https://www.artstation.com/ahmedalmaz",
-    icon: "artstation",
-  },
-  { label: "LinkedIn", href: "https://www.linkedin.com/", icon: "linkedin" },
-  { label: "Instagram", href: "https://www.instagram.com/", icon: "instagram" },
-  { label: "Facebook", href: "https://www.facebook.com/", icon: "facebook" },
-];
+// Email first, then the profile links (edited in the admin panel). A link
+// that is not set is simply not shown.
+function buildChannels(email, links) {
+  return [
+    { label: "Gmail", href: `mailto:${email}`, icon: "gmail" },
+    { label: "ArtStation", href: links.artstation, icon: "artstation" },
+    { label: "LinkedIn", href: links.linkedin, icon: "linkedin" },
+    { label: "Instagram", href: links.instagram, icon: "instagram" },
+    { label: "Facebook", href: links.facebook, icon: "facebook" },
+  ].filter((c) => c.href);
+}
 
 /* ---------- official brand glyphs (filled, 24x24, from Simple Icons, CC0) ---------- */
 const PATHS = {
@@ -86,7 +83,7 @@ const WAVE =
   "M0 5 Q12.5 0 25 5 T50 5 T75 5 T100 5 T125 5 T150 5 T175 5 T200 5 V10 H0 Z";
 const EASE_WATER = "ease-[cubic-bezier(0.45,0,0.15,1)]";
 
-function Social({ href, icon, label }) {
+function Social({ href, icon, label, email }) {
   const el = useRef(null);
   const spill = useRef(null);
   const tl = useRef(null);
@@ -161,7 +158,11 @@ function Social({ href, icon, label }) {
     if (icon !== "gmail") return;
     if (matchMedia("(pointer: coarse)").matches) return;
     e.preventDefault();
-    window.open(GMAIL, "_blank", "noopener,noreferrer");
+    window.open(
+      `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
   };
 
   return (
@@ -170,7 +171,7 @@ function Social({ href, icon, label }) {
       href={href}
       target={external ? "_blank" : undefined}
       rel="noreferrer"
-      aria-label={icon === "gmail" ? `Email me on Gmail (${EMAIL})` : label}
+      aria-label={icon === "gmail" ? `Email me on Gmail (${email})` : label}
       onClick={onClick}
       onPointerEnter={play}
       onPointerMove={move}
@@ -244,7 +245,8 @@ function Social({ href, icon, label }) {
   );
 }
 
-export default function Contact() {
+export default function Contact({ email, links }) {
+  const channels = buildChannels(email, links);
   const root = useRef(null);
   const [copied, setCopied] = useState(false);
 
@@ -320,7 +322,7 @@ export default function Contact() {
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(EMAIL);
+      await navigator.clipboard.writeText(email);
       setCopied(true);
     } catch {
       setCopied(false);
@@ -348,7 +350,7 @@ export default function Contact() {
             <span
               key={i}
               aria-hidden="true"
-              className="uppercase font-display font-semibold mr-[0.25em] inline-block overflow-hidden pb-[0.12em] align-top"
+              className="mr-[0.25em] inline-block overflow-hidden pb-[0.12em] align-top"
             >
               <span data-line className="inline-block">
                 {w}
@@ -369,10 +371,10 @@ export default function Contact() {
           data-fade
           type="button"
           onClick={copy}
-          aria-label={`Copy email address ${EMAIL}`}
+          aria-label={`Copy email address ${email}`}
           className="group/mail relative mt-8 max-w-full truncate pb-1 text-lg font-light text-white opacity-0 transition-colors duration-500 hover:text-accent sm:mt-10 sm:text-2xl"
         >
-          {copied ? "Copied to clipboard" : EMAIL}
+          {copied ? "Copied to clipboard" : email}
           <span
             aria-hidden="true"
             className="absolute inset-x-0 bottom-0 h-px bg-white/20"
@@ -384,9 +386,9 @@ export default function Contact() {
         </button>
 
         <ul className="mt-14 flex flex-wrap items-center justify-center gap-x-3 gap-y-8 min-[360px]:gap-x-5 sm:mt-16 sm:gap-x-10 lg:gap-x-14">
-          {CHANNELS.map((c) => (
+          {channels.map((c) => (
             <li key={c.label} data-fade className="opacity-0">
-              <Social {...c} />
+              <Social {...c} email={email} />
             </li>
           ))}
         </ul>

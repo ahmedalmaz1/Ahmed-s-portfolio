@@ -3,9 +3,8 @@ import { useRef } from "react";
 import TransitionLink from "@/components/TransitionLink";
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 import ProjectCard from "@/components/project/ProjectCard";
-import { PROJECTS } from "@/data/projects";
 
-export default function Projects() {
+export default function Projects({ projects }) {
   const root = useRef(null);
 
   useGSAP(
@@ -76,7 +75,7 @@ export default function Projects() {
         </div>
 
         <div className="flex flex-col gap-3 sm:gap-4 lg:gap-6">
-          {PROJECTS.map((p, i) => (
+          {projects.map((p, i) => (
             <ProjectCard
               key={p.slug}
               project={p}
