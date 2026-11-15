@@ -34,6 +34,8 @@ const nextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
+      // never index or cache the admin panel
+      { source: "/admin/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }, { key: "Cache-Control", value: "no-store" }] },
       { source: "/video/:path*", headers: mediaCache },
       { source: "/video.mp4", headers: mediaCache },
       { source: "/audio/:path*", headers: mediaCache },
