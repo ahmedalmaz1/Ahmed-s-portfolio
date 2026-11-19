@@ -1,11 +1,16 @@
 "use client";
 import { useRef } from "react";
 import TransitionLink from "@/components/TransitionLink";
+import LiquidButton from "@/components/LiquidButton";
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 import ProjectCard from "@/components/project/ProjectCard";
 
+const HOME_LIMIT = 2;
+
 export default function Projects({ projects }) {
   const root = useRef(null);
+  const shown = projects.slice(0, HOME_LIMIT);
+  const hasMore = projects.length > HOME_LIMIT;
 
   useGSAP(
     () => {
@@ -13,12 +18,13 @@ export default function Projects({ projects }) {
         "(prefers-reduced-motion: reduce)",
       ).matches;
       const heading = root.current.querySelector("[data-heading]");
+      // the "see all" row only exists when there are more projects to see
       const more = root.current.querySelector("[data-more]");
       const rules = root.current.querySelectorAll("[data-rule]");
       const cta = root.current.querySelector("[data-cta]");
 
       if (reduce) {
-        gsap.set([heading, cta], { opacity: 1, y: 0 });
+        gsap.set([heading, cta].filter(Boolean), { opacity: 1, y: 0 });
         gsap.set(rules, { scaleX: 1 });
         return;
       }
@@ -45,6 +51,7 @@ export default function Projects({ projects }) {
         tl.to(heading, { opacity: 1, y: 0, duration: 1 }),
       );
 
+      if (!more) return;
       gsap.set(rules, {
         scaleX: 0,
         transformOrigin: (i) => (i === 0 ? "100% 50%" : "0% 50%"),
@@ -56,7 +63,7 @@ export default function Projects({ projects }) {
           .to(cta, { opacity: 1, y: 0, duration: 1 }, 0.5),
       );
     },
-    { scope: root },
+    { scope: root, dependencies: [hasMore] },
   );
 
   return (
@@ -75,7 +82,7 @@ export default function Projects({ projects }) {
         </div>
 
         <div className="flex flex-col gap-3 sm:gap-4 lg:gap-6">
-          {projects.map((p, i) => (
+          {shown.map((p, i) => (
             <ProjectCard
               key={p.slug}
               project={p}
@@ -85,41 +92,37 @@ export default function Projects({ projects }) {
           ))}
         </div>
 
-        <div
-          data-more
-          className="mt-8 flex items-center justify-center gap-4 sm:mt-10 sm:gap-6 lg:mt-14"
-        >
-          <span data-rule className="h-px flex-1 bg-white/15" />
-
-          <TransitionLink
-            data-cta
-            href="/projects"
-            className="group/cta relative inline-flex shrink-0 items-center gap-3 overflow-hidden rounded-full border border-white/20 px-6 py-3 text-sm font-medium text-white opacity-0 transition-colors duration-500 hover:border-accent hover:text-bg"
+        {hasMore && (
+          <div
+            data-more
+            className="mt-8 flex items-center justify-center gap-4 sm:mt-10 sm:gap-6 lg:mt-14"
           >
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 origin-left scale-x-0 bg-accent transition-transform duration-500 ease-out group-hover/cta:scale-x-100"
-            />
-            <span className="relative">See all projects</span>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className="relative transition-transform duration-500 group-hover/cta:translate-x-1"
-            >
-              <path d="M5 12h14" />
-              <path d="m13 6 6 6-6 6" />
-            </svg>
-          </TransitionLink>
+            <span data-rule className="h-px flex-1 bg-white/15" />
 
-          <span data-rule className="h-px flex-1 bg-white/15" />
-        </div>
+            <LiquidButton
+              as={TransitionLink}
+              href="/projects"
+              wrapperProps={{ "data-cta": "", className: "shrink-0 opacity-0" }}
+            >
+              <span>See all projects</span>
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                className="h-4 w-4 transition-transform duration-500 ease-out group-hover/cv:translate-x-1"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12h14" />
+                <path d="m13 6 6 6-6 6" />
+              </svg>
+            </LiquidButton>
+
+            <span data-rule className="h-px flex-1 bg-white/15" />
+          </div>
+        )}
       </div>
     </section>
   );

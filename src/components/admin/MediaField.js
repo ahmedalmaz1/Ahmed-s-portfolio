@@ -1,13 +1,30 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { checkImageFile, checkShowreelFile, uploadImage, uploadShowreel } from "@/lib/admin/image";
+import {
+  checkCvFile,
+  checkImageFile,
+  checkShowreelFile,
+  uploadCv,
+  uploadImage,
+  uploadShowreel,
+} from "@/lib/admin/image";
 import { Button, ProgressBar } from "./ui";
 
 /**
- * Single-file upload field (image or mp4). Uploads immediately, reports the
+ * Single-file upload field (image, mp4 or pdf). Uploads immediately, reports the
  * result through onChange({ key, url, ...extra }) and onChange(null) on remove.
  */
-export default function MediaField({ kind = "image", folder, value, onChange, max, thumb = false, label, error, shape = "wide" }) {
+export default function MediaField({
+  kind = "image",
+  folder,
+  value,
+  onChange,
+  max,
+  thumb = false,
+  label,
+  error,
+  shape = "wide",
+}) {
   const input = useRef(null);
   const abort = useRef(null);
   const [stage, setStage] = useState("");
@@ -22,7 +39,12 @@ export default function MediaField({ kind = "image", folder, value, onChange, ma
     e.target.value = "";
     if (!file) return;
 
-    const bad = kind === "video" ? checkShowreelFile(file) : checkImageFile(file);
+    const check = {
+      video: checkShowreelFile,
+      pdf: checkCvFile,
+      image: checkImageFile,
+    }[kind];
+    const bad = check(file);
     if (bad) return setProblem(bad);
 
     setProblem("");
@@ -31,11 +53,20 @@ export default function MediaField({ kind = "image", folder, value, onChange, ma
     try {
       const opts = { onProgress: setProgress, signal: abort.current.signal };
       let result;
-      if (kind === "video") {
+      if (kind === "video" || kind === "pdf") {
         setStage("Uploading…");
-        result = await uploadShowreel(file, opts);
+        result = await (kind === "video" ? uploadShowreel : uploadCv)(
+          file,
+          opts,
+        );
       } else {
-        result = await uploadImage(file, { folder, thumb, max, onStage: setStage, ...opts });
+        result = await uploadImage(file, {
+          folder,
+          thumb,
+          max,
+          onStage: setStage,
+          ...opts,
+        });
       }
       onChange(result);
     } catch (err) {
@@ -45,18 +76,51 @@ export default function MediaField({ kind = "image", folder, value, onChange, ma
     }
   }
 
-  const box = shape === "round" ? "size-24 rounded-full" : "aspect-video w-full max-w-xs rounded-xl";
+  const box =
+    shape === "round"
+      ? "size-24 rounded-full"
+      : "aspect-video w-full max-w-xs rounded-xl";
 
   return (
     <div>
       <p className="mb-1.5 text-sm font-medium">{label}</p>
       <div className="flex flex-wrap items-center gap-4">
-        <div className={`${box} grid shrink-0 place-items-center overflow-hidden border border-line bg-bg text-xs text-mute`}>
+        <div
+          className={`${box} grid shrink-0 place-items-center overflow-hidden border border-line bg-bg text-xs text-mute`}
+        >
           {value?.url && kind === "image" && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={value.url} alt="" className="size-full object-cover" />
           )}
-          {value?.url && kind === "video" && <video src={value.url} className="size-full object-cover" controls preload="metadata" />}
+          {value?.url && kind === "video" && (
+            <video
+              src={value.url}
+              className="size-full object-cover"
+              controls
+              preload="metadata"
+            />
+          )}
+          {value?.url && kind === "pdf" && (
+            <a
+              href={value.url}
+              className="flex size-full flex-col items-center justify-center gap-1.5 text-ink hover:bg-panel2"
+              title="Open the current file"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                className="size-7"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5zM14 3v5h5" />
+              </svg>
+              <span className="text-[11px] font-medium uppercase tracking-wider">
+                PDF
+              </span>
+            </a>
+          )}
           {!value?.url && "No file"}
         </div>
 
@@ -65,11 +129,18 @@ export default function MediaField({ kind = "image", folder, value, onChange, ma
             ref={input}
             type="file"
             hidden
-            accept={kind === "video" ? "video/mp4" : "image/jpeg,image/png,image/webp,image/avif"}
+            accept={
+              { video: "video/mp4", pdf: "application/pdf" }[kind] ??
+              "image/jpeg,image/png,image/webp,image/avif"
+            }
             onChange={pick}
           />
           <div className="flex flex-wrap gap-2">
-            <Button variant="ghost" onClick={() => input.current.click()} disabled={busy}>
+            <Button
+              variant="ghost"
+              onClick={() => input.current.click()}
+              disabled={busy}
+            >
               {value?.url ? "Replace" : "Upload"}
             </Button>
             {value?.url && !busy && (
@@ -87,7 +158,8 @@ export default function MediaField({ kind = "image", folder, value, onChange, ma
             <div className="space-y-1.5">
               <ProgressBar value={stage === "Optimising…" ? 0 : progress} />
               <p className="text-xs text-mute">
-                {stage} {stage === "Uploading…" && `${Math.round(progress * 100)}%`}
+                {stage}{" "}
+                {stage === "Uploading…" && `${Math.round(progress * 100)}%`}
               </p>
             </div>
           )}

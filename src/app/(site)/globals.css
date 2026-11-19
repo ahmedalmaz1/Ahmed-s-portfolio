@@ -35,8 +35,14 @@
     }
   }
 
+  /* Large screens: the whole site scales up in proportion to the laptop
+     design (1440px). Below 1440px nothing changes. Everything sized in rem
+     (Tailwind spacing, type, max-w-*) grows with it; media queries are not
+     affected, so the layout itself stays the same. Fully proportional up to
+     4K (3840px); beyond that it stops growing. */
   html {
-    scroll-padding-top: 76px;
+    scroll-padding-top: 4.75rem;
+    font-size: clamp(100%, calc(1rem + (100vw - 1440px) * 0.01111), 2.7rem);
   }
 
   /* every heading uses the display font; everything else uses DM Sans */
@@ -225,4 +231,30 @@
   .snd-on .snd-bar {
     transform: scaleY(var(--hi));
   }
+}
+
+/* ---------- CV buttons (About.js) ---------- */
+/* download arrow drops into the tray and a new one falls in from above */
+@keyframes cv-drop {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  45% {
+    transform: translateY(9px);
+    opacity: 0;
+  }
+  46% {
+    transform: translateY(-9px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.cv-btn:hover .cv-arrow,
+.cv-btn:focus-visible .cv-arrow {
+  animation: cv-drop 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.15s;
 }

@@ -1,46 +1,49 @@
-// Every tunable number/list lives here so behaviour can be changed in one place.
-
 export const SOCIAL_PLATFORMS = [
-  'ArtStation',
-  'Sketchfab',
-  'Behance',
-  'Dribbble',
-  'Vimeo',
-  'YouTube',
-  'Instagram',
-  'LinkedIn',
-  'X',
-  'TikTok',
-  'Facebook',
-  'GitHub',
-  'Website',
+	'ArtStation',
+	'Sketchfab',
+	'Behance',
+	'Dribbble',
+	'Vimeo',
+	'YouTube',
+	'Instagram',
+	'LinkedIn',
+	'X',
+	'TikTok',
+	'Facebook',
+	'GitHub',
+	'Website',
 ];
 
 // R2 folders. Keys look like  projects/<uuid>.webp  or  projects/<uuid>_thumb.webp
 export const MEDIA_FOLDERS = ['projects', 'avatars', 'showreel'];
 
+// CV (PDF) lives in its own folder and is uploaded through PUT /admin/media/cv, not the image endpoint.
+// Key looks like  cv/<uuid>.pdf
+export const CV_FOLDER = 'cv';
+
 const MB = 1024 * 1024;
 
 export const LIMITS = {
-  nameMax: 100,
-  titleMax: 120,
-  descriptionMax: 3000,
-  bioMax: 3000,
-  altMax: 200,
-  toolkitMaxItems: 20,
-  toolkitItemMax: 40,
-  imagesPerProject: 40,
-  socialLinksMax: 12,
-  imageMaxBytes: 15 * MB,
-  thumbMaxBytes: 2 * MB,
-  imageRequestMaxBytes: 18 * MB, // image + thumb + multipart overhead
-  showreelMaxBytes: 90 * MB, // free plan caps request bodies at 100 MB
+	nameMax: 100,
+	titleMax: 120,
+	descriptionMax: 3000,
+	bioMax: 3000,
+	altMax: 200,
+	toolkitMaxItems: 20,
+	toolkitItemMax: 40,
+	imagesPerProject: 40,
+	socialLinksMax: 12,
+	imageMaxBytes: 15 * MB,
+	thumbMaxBytes: 2 * MB,
+	imageRequestMaxBytes: 18 * MB, // image + thumb + multipart overhead
+	cvMaxBytes: 10 * MB, // a CV is validated in memory before it is stored, so keep this modest
+	showreelMaxBytes: 90 * MB, // free plan caps request bodies at 100 MB
 };
 
 export const LOGIN = {
-  maxFailures: 5,
-  lockSeconds: 15 * 60,
-  tokenTtlSeconds: 12 * 60 * 60,
+	maxFailures: 5,
+	lockSeconds: 15 * 60,
+	tokenTtlSeconds: 12 * 60 * 60,
 };
 
 // Public JSON is safe to cache briefly in browsers/CDNs.

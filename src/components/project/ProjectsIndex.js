@@ -55,7 +55,7 @@ export default function ProjectsIndex({ projects }) {
           <div className="mx-auto max-w-6xl px-4 sm:px-10 xl:px-0">
             <p
               data-fade
-              className="text-[11px] uppercase tracking-[0.35em] text-neutral-400 opacity-0"
+              className="text-[0.6875rem] uppercase tracking-[0.35em] text-neutral-400 opacity-0"
             >
               Selected work
             </p>
