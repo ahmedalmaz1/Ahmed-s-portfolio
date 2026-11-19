@@ -15,8 +15,9 @@ if (!baseArg || !password) {
 }
 const base = baseArg.replace(/\/$/, '');
 
-// 1x1 PNG and a minimal MP4 header: enough to pass the content sniffing.
+// 1x1 PNG, a minimal MP4 header and a minimal PDF: enough to pass the content sniffing.
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+const PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
 const MP4 = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypisom'), Buffer.from([0, 0, 2, 0]), Buffer.from('isommp41')]);
 
 let passed = 0;
@@ -292,6 +293,50 @@ r = await api('PATCH', '/admin/profile', { json: { showreelKey: reel2.key } });
 check('profile: replace showreel', r.status === 200 && r.data.showreel.key === reel2.key);
 check('profile: old showreel removed from R2', (await fetch(reel.url)).status === 404);
 
+// --- cv (pdf) --------------------------------------------------------------------
+r = await api('PUT', '/admin/media/cv', { body: PDF, headers: { 'Content-Type': 'image/png' } });
+check('cv: wrong content type -> 415', r.status === 415);
+r = await api('PUT', '/admin/media/cv', { body: PNG, headers: { 'Content-Type': 'application/pdf' } });
+check('cv: non-pdf bytes are rejected -> 415', r.status === 415, JSON.stringify(r.data));
+r = await api('PUT', '/admin/media/cv', { body: PDF, headers: { 'Content-Type': 'application/pdf' }, auth: false });
+check('cv: upload without token -> 401', r.status === 401);
+r = await api('PUT', '/admin/media/cv', { body: PDF, headers: { 'Content-Type': 'application/pdf' } });
+const cv = r.data;
+check('cv: upload pdf -> 201', r.status === 201 && cv.key.startsWith('cv/') && cv.key.endsWith('.pdf'), JSON.stringify(r.data));
+m = await fetch(cv.url);
+check('cv: uploaded file is readable', m.status === 200 && m.headers.get('content-type') === 'application/pdf', `(got ${m.status})`);
+r = await api('PATCH', '/admin/profile', { json: { cvKey: avatar.key } });
+check('cv: key from wrong folder -> 400', r.status === 400);
+r = await api('PATCH', '/admin/profile', { json: { cvKey: 'cv/00000000-0000-0000-0000-000000000000.pdf' } });
+check('cv: key that was never uploaded -> 400', r.status === 400, JSON.stringify(r.data));
+r = await api('PATCH', '/admin/profile', { json: { cvKey: cv.key } });
+check('cv: attach to profile', r.status === 200 && r.data.cv?.url === cv.url, JSON.stringify(r.data));
+m = await fetch(`${base}/cv`);
+check(
+	'cv: GET /cv opens inline with a file name',
+	m.status === 200 &&
+		m.headers.get('content-type') === 'application/pdf' &&
+		/^inline; filename="[A-Za-z0-9-]+\.pdf"$/.test(m.headers.get('content-disposition') ?? '') &&
+		(await m.text()).startsWith('%PDF-'),
+	`(got ${m.status} ${m.headers.get('content-disposition')})`,
+);
+m = await fetch(`${base}/cv/download`);
+check(
+	'cv: GET /cv/download is an attachment',
+	m.status === 200 && /^attachment; filename="[A-Za-z0-9-]+\.pdf"$/.test(m.headers.get('content-disposition') ?? ''),
+	`(got ${m.status} ${m.headers.get('content-disposition')})`,
+);
+const cvEtag = (await fetch(`${base}/cv`)).headers.get('etag');
+m = await fetch(`${base}/cv`, { headers: { 'If-None-Match': cvEtag } });
+check('cv: unchanged file -> 304', m.status === 304, `(got ${m.status})`);
+r = await api('GET', '/site', { auth: false });
+check('cv: public /site exposes the cv url', r.status === 200 && r.data.profile.cv?.url === cv.url);
+r = await api('PUT', '/admin/media/cv', { body: PDF, headers: { 'Content-Type': 'application/pdf' } });
+const cv2 = r.data;
+r = await api('PATCH', '/admin/profile', { json: { cvKey: cv2.key } });
+check('cv: replace', r.status === 200 && r.data.cv.key === cv2.key);
+check('cv: old file removed from R2', (await fetch(cv.url)).status === 404);
+
 // --- cleanup + lockout -------------------------------------------------------
 r = await api('DELETE', `/admin/projects/${project.id}`);
 check('project: delete', r.status === 200);
@@ -302,8 +347,14 @@ r = await api('DELETE', `/admin/projects/${p2.id}`);
 r = await api('DELETE', `/admin/social-links/${s2.id}`);
 r = await api('PATCH', '/admin/profile', { json: { name: '' } });
 check('profile: empty name -> 400', r.status === 400);
-r = await api('PATCH', '/admin/profile', { json: { avatarKey: null, showreelKey: null, showreelPosterKey: null } });
-check('profile: detach avatar + showreel', r.status === 200 && r.data.avatar === null && r.data.showreel === null, JSON.stringify(r.data));
+r = await api('PATCH', '/admin/profile', { json: { avatarKey: null, showreelKey: null, showreelPosterKey: null, cvKey: null } });
+check(
+	'profile: detach avatar + showreel + cv',
+	r.status === 200 && r.data.avatar === null && r.data.showreel === null && r.data.cv === null,
+	JSON.stringify(r.data),
+);
+check('profile: detached cv removed from R2', (await fetch(cv2.url)).status === 404);
+check('cv: /cv is 404 when no cv is set', (await fetch(`${base}/cv`)).status === 404);
 check('profile: detached showreel removed from R2', (await fetch(reel2.url)).status === 404);
 check('profile: detached avatar removed from R2', (await fetch(avatar.url)).status === 404);
 r = await api('PATCH', '/admin/profile', { json: { email: '' } });

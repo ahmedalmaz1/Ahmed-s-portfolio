@@ -57,7 +57,7 @@ const Toolkit = memo(function Toolkit({ tools }) {
   if (!tools?.length) return null;
   return (
     <div data-intro className="mt-8 max-w-lg border-t border-white/10 pt-6">
-      <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">
+      <p className="text-[0.6875rem] uppercase tracking-[0.3em] text-neutral-500">
         Toolkit
       </p>
       <ul className="mt-4 flex flex-wrap gap-2">
@@ -87,6 +87,7 @@ const NextCard = memo(function NextCard({ next }) {
           alt=""
           fill
           sizes="(min-width: 1024px) 60vw, 100vw"
+          quality={90}
           className="object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-105"
         />
       )}
@@ -95,7 +96,7 @@ const NextCard = memo(function NextCard({ next }) {
       <span className="absolute inset-0 bg-linear-to-r from-[#050a0f]/90 via-[#050a0f]/40 to-transparent" />
 
       <span className="absolute inset-0 flex flex-col justify-center gap-1.5 p-4 sm:gap-2.5 sm:p-8 lg:gap-3 lg:p-12">
-        <span className="text-[11px] uppercase tracking-[0.4em] text-accent sm:text-xs">
+        <span className="text-[0.6875rem] uppercase tracking-[0.4em] text-accent sm:text-xs">
           Next project
         </span>
         <span className="font-display text-2xl font-light leading-[1.05] tracking-tight sm:text-4xl lg:text-5xl">
@@ -531,7 +532,7 @@ export default function ProjectDetail({ project, next }) {
               {/* scroll hint: desktop only */}
               <p
                 data-intro
-                className="mt-10 hidden items-center gap-4 text-[11px] uppercase tracking-[0.35em] text-neutral-500 lg:flex"
+                className="mt-10 hidden items-center gap-4 text-[0.6875rem] uppercase tracking-[0.35em] text-neutral-500 lg:flex"
               >
                 <span className="h-px w-12 bg-accent/60" />
                 <span>Scroll</span>

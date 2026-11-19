@@ -100,7 +100,7 @@ export default function Navbar({ visible }) {
       >
         <nav
           aria-label="Main"
-          className="flex h-16 items-center justify-between px-(--gutter) pt-3 sm:h-20 sm:pt-0"
+          className="flex h-16 items-center justify-between px-(--gutter) pt-3 sm:h-20 sm:pt-0 md:h-auto md:py-4 lg:py-4 min-[2200px]:py-12 min-[3000px]:py-16"
         >
           <a
             href={hrefOf("#top")}
@@ -108,19 +108,19 @@ export default function Navbar({ visible }) {
             className="flex items-center gap-3"
             aria-label="Ahmed Almaz, back to top"
           >
-            <span className="text-xs font-light uppercase tracking-[0.35em]">
+            <span className="text-xs font-light uppercase tracking-[0.35em] min-[2200px]:text-sm min-[3000px]:text-base">
               Ahmed Almaz
             </span>
           </a>
 
-          <ul className="hidden items-center gap-1 rounded-full border border-white/10 bg-black/50 p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150 md:flex">
+          <ul className="hidden items-center gap-1 rounded-full border border-white/10 bg-black/50 p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150 md:flex min-[2200px]:gap-1.5 min-[2200px]:p-2 min-[3000px]:gap-2 min-[3000px]:p-2.5">
             {LINKS.map((l) => (
               <li key={l.href}>
                 <a
                   href={hrefOf(l.href)}
                   onClick={(e) => go(e, l.href)}
                   aria-label={l.label}
-                  className="group block rounded-full px-5 py-2 text-xs font-bold uppercase tracking-[0.3em] transition-colors duration-300 hover:bg-white/10"
+                  className="group block rounded-full px-5 py-2 text-xs font-bold uppercase tracking-[0.3em] transition-colors duration-300 hover:bg-white/10 min-[2200px]:px-7 min-[2200px]:py-2.5 min-[2200px]:text-sm min-[3000px]:px-9 min-[3000px]:py-3 min-[3000px]:text-base"
                 >
                   <RollText text={l.label} />
                 </a>

@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { duck } from "@/lib/ambient";
 
@@ -104,49 +105,57 @@ export default function YouTubeEmbed({
             onError={nextThumb}
             className="absolute inset-0 h-full w-full object-cover"
           />
-          <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-black/75 via-black/10 to-black/30" />
+          {/* scrim only behind the header, so the artwork itself is not dimmed */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-linear-to-b from-black/70 to-transparent sm:h-32" />
 
           <button
             type="button"
             onClick={() => setPlaying(true)}
             aria-label={`Play video: ${title}`}
-            className="group absolute inset-0 z-10 flex cursor-pointer items-center justify-center"
+            className="group absolute inset-0 z-10 flex cursor-pointer items-center justify-center focus-visible:outline-none"
           >
-            <span className="flex h-12 w-[4.5rem] items-center justify-center rounded-2xl bg-[#ff0033] text-white shadow-[0_10px_40px_-8px_rgba(255,0,51,0.6)] transition-transform duration-500 ease-out group-hover:scale-110 sm:h-16 sm:w-24">
+            {/* same shape and proportions (68x48) as YouTube's own play button: 52px on phones, 68px from sm up */}
+            <span className="rounded-xl transition-transform duration-300 ease-out group-hover:scale-105 group-focus-visible:scale-105 group-focus-visible:ring-2 group-focus-visible:ring-white/80">
               <svg
-                viewBox="0 0 24 24"
-                fill="currentColor"
+                viewBox="0 0 68 48"
                 aria-hidden="true"
-                className="ml-0.5 h-6 w-6 sm:h-8 sm:w-8"
+                className="block w-[3.25rem] drop-shadow-[0_2px_6px_rgba(0,0,0,0.3)] sm:w-[4.25rem]"
               >
-                <path d="M8 5v14l11-7z" />
+                <path
+                  d="M66.52,7.74c-0.78-2.93-2.49-5.41-5.42-6.19C55.79,.13,34,0,34,0S12.21,.13,6.9,1.55C3.97,2.33,2.27,4.81,1.48,7.74C0.06,13.05,0,24,0,24s0.06,10.95,1.48,16.26c0.78,2.93,2.49,5.41,5.42,6.19C12.21,47.87,34,48,34,48s21.79-0.13,27.1-1.55c2.93-0.78,4.64-3.26,5.42-6.19C67.94,34.95,68,24,68,24S67.94,13.05,66.52,7.74z"
+                  fill="#f00"
+                />
+                <path d="M 45,24 27,14 27,34" fill="#fff" />
               </svg>
             </span>
           </button>
 
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center gap-3 p-3 sm:gap-4 sm:p-5">
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center gap-3 p-3 sm:p-4 lg:p-6">
             {channel?.avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={channel.avatar}
                 alt=""
-                className="h-9 w-9 shrink-0 rounded-full object-cover sm:h-11 sm:w-11"
+                width={80}
+                height={80}
+                sizes="40px"
+                quality={90}
+                className="size-9 shrink-0 rounded-full bg-black/40 object-cover ring-1 ring-white/25 sm:size-10"
               />
             ) : (
               <span
                 aria-hidden="true"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-semibold text-[#050a0f] sm:h-11 sm:w-11"
+                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-semibold text-[#050a0f] sm:size-10"
               >
                 {(channel?.name || title).charAt(0)}
               </span>
             )}
 
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-white sm:text-base">
+              <p className="truncate text-sm font-medium leading-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] sm:text-base">
                 {title}
               </p>
               {channel?.name && (
-                <p className="truncate text-xs text-white/70 sm:text-sm">
+                <p className="truncate text-xs text-white/75 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] sm:text-sm">
                   {channel.name}
                 </p>
               )}
@@ -156,7 +165,7 @@ export default function YouTubeEmbed({
               type="button"
               onClick={copyLink}
               aria-label={copied ? "Link copied" : "Copy video link"}
-              className="pointer-events-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md transition-colors duration-300 hover:bg-white/30 sm:h-10 sm:w-10"
+              className="pointer-events-auto flex size-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md transition-colors duration-300 hover:bg-white/30 sm:size-10"
             >
               <svg
                 width="16"

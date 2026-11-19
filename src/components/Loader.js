@@ -223,7 +223,7 @@ export default function Loader({
               style={{ transform: "scaleX(0)" }}
             />
           </div>
-          <div className="mt-3 flex justify-between font-mono text-[10px] tracking-widest text-ink/45">
+          <div className="mt-3 flex justify-between font-mono text-[0.625rem] tracking-widest text-ink/45">
             <span>LOADING</span>
             <span ref={countEl} className="tabular-nums">
               000

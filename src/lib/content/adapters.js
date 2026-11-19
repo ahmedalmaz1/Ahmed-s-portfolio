@@ -5,7 +5,7 @@ export const FALLBACK_EMAIL = "hello@ahmedalmaz.com";
 const SOCIAL_KEYS = ["ArtStation", "LinkedIn", "Instagram", "Facebook"];
 
 /** One project from the API -> the UI project shape. */
-export function toProject(api, channelName = "") {
+export function toProject(api, channelName = "", channelAvatar = "") {
   return {
     slug: api.slug,
     href: `/projects/${api.slug}`,
@@ -20,7 +20,11 @@ export function toProject(api, channelName = "") {
     })),
     tools: api.toolkit ?? [],
     video: api.youtubeId
-      ? { id: api.youtubeId, title: `${api.title} video`, channel: { name: channelName, avatar: "" } }
+      ? {
+          id: api.youtubeId,
+          title: `${api.title} video`,
+          channel: { name: channelName, avatar: channelAvatar },
+        }
       : null,
   };
 }
@@ -34,10 +38,13 @@ export function toParagraphs(text) {
 }
 
 /** The /site response -> everything the home page needs. */
-export function toSite(api, channelName = "") {
+export function toSite(api, channelName = "", apiUrl = "") {
   const { profile, socialLinks = [], projects = [] } = api;
   const links = Object.fromEntries(
-    SOCIAL_KEYS.map((name) => [name.toLowerCase(), socialLinks.find((l) => l.platform === name)?.url ?? null]),
+    SOCIAL_KEYS.map((name) => [
+      name.toLowerCase(),
+      socialLinks.find((l) => l.platform === name)?.url ?? null,
+    ]),
   );
   return {
     name: profile.name || channelName,
@@ -45,8 +52,14 @@ export function toSite(api, channelName = "") {
     email: profile.email || FALLBACK_EMAIL,
     avatar: profile.avatar?.url ?? null,
     showreel: profile.showreel?.url ?? null,
+    // stable addresses served by the API: /cv opens the PDF, /cv/download saves it
+    cv: profile.cv
+      ? { view: `${apiUrl}/cv`, download: `${apiUrl}/cv/download` }
+      : null,
     links,
-    projects: projects.map((p) => toProject(p, channelName)),
+    projects: projects.map((p) =>
+      toProject(p, channelName, profile.avatar?.url ?? ""),
+    ),
   };
 }
 

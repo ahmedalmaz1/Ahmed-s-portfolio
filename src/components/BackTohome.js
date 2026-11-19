@@ -46,7 +46,7 @@ export default function BackToHome() {
       tabIndex={show ? 0 : -1}
       aria-hidden={!show}
       aria-label="Back to home"
-      className={`group fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-[90] grid h-12 w-12 place-items-center rounded-full border border-white/15 bg-black/50 text-white shadow-[0_8px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150 transition-[opacity,transform,background-color,border-color,box-shadow] duration-700 ease-out hover:border-white/35 hover:bg-white/[0.08] hover:shadow-[0_8px_30px_rgba(0,0,0,0.35),0_0_18px_rgba(255,255,255,0.08)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-white sm:bottom-5 sm:right-5 sm:h-12 sm:w-12 lg:bottom-6 lg:right-6 lg:h-[52px] lg:w-[52px] ${
+      className={`group fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-[90] grid h-12 w-12 place-items-center rounded-full border border-white/15 bg-black/50 text-white shadow-[0_8px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150 transition-[opacity,transform,background-color,border-color,box-shadow] duration-700 ease-out hover:border-white/35 hover:bg-white/[0.08] hover:shadow-[0_8px_30px_rgba(0,0,0,0.35),0_0_18px_rgba(255,255,255,0.08)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-white sm:bottom-5 sm:right-5 sm:h-12 sm:w-12 lg:bottom-6 lg:right-6 lg:h-[3.25rem] lg:w-[3.25rem] ${
         show
           ? "translate-y-0 opacity-100"
           : "pointer-events-none translate-y-3 opacity-0"
@@ -54,7 +54,7 @@ export default function BackToHome() {
     >
       <svg
         viewBox="0 0 24 24"
-        className="h-5 w-5 lg:h-[22px] lg:w-[22px]"
+        className="h-5 w-5 lg:h-[1.375rem] lg:w-[1.375rem]"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.5"

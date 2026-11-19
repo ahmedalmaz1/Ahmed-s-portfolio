@@ -20,10 +20,16 @@ async function get(path) {
 }
 
 /** Profile, social links and published projects. Deduplicated per request. */
-export const getSite = cache(async () => toSite(await get("/site"), SITE_NAME));
+export const getSite = cache(async () =>
+  toSite(await get("/site"), SITE_NAME, API_URL),
+);
 
 /** One published project with its gallery, or null. */
 export const getProject = cache(async (slug) => {
-  const data = await get(`/projects/${encodeURIComponent(slug)}`);
-  return data && toProject(data, SITE_NAME);
+  // getSite() is cached per request, so this costs no extra fetch; it supplies the channel avatar
+  const [data, site] = await Promise.all([
+    get(`/projects/${encodeURIComponent(slug)}`),
+    getSite(),
+  ]);
+  return data && toProject(data, SITE_NAME, site.avatar ?? "");
 });

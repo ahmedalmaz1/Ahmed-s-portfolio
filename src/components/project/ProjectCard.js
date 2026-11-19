@@ -104,6 +104,7 @@ export default function ProjectCard({ project, index, priority = false }) {
               alt={project.title}
               fill
               sizes="100vw"
+              quality={90}
               priority={priority}
               className="object-cover"
             />

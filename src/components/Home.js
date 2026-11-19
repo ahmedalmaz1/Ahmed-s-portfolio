@@ -15,7 +15,12 @@ import Footer from "@/components/layout/Footer";
 const Sections = memo(function Sections({ site }) {
   return (
     <>
-      <About name={site.name} bio={site.bio} avatar={site.avatar} />
+      <About
+        name={site.name}
+        bio={site.bio}
+        avatar={site.avatar}
+        cv={site.cv}
+      />
       <Projects projects={site.projects} />
       <Showreel src={site.showreel} />
       <Contact email={site.email} links={site.links} />

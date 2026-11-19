@@ -14,7 +14,12 @@ const NAV = [
 
 const subscribe = () => () => {};
 // true on the client when a valid token exists; false during SSR / hydration
-const useHasSession = () => useSyncExternalStore(subscribe, () => getToken() !== null, () => null);
+const useHasSession = () =>
+  useSyncExternalStore(
+    subscribe,
+    () => getToken() !== null,
+    () => null,
+  );
 
 export default function AdminShell({ children }) {
   const hasSession = useHasSession();
@@ -27,7 +32,10 @@ export default function AdminShell({ children }) {
   useEffect(() => {
     if (hasSession === false) return endSession("login");
     if (hasSession) {
-      const timer = setTimeout(() => endSession("expired"), Math.min(sessionTimeLeft(), 2 ** 31 - 1));
+      const timer = setTimeout(
+        () => endSession("expired"),
+        Math.min(sessionTimeLeft(), 2 ** 31 - 1),
+      );
       return () => clearTimeout(timer);
     }
   }, [hasSession]);
@@ -65,7 +73,7 @@ export default function AdminShell({ children }) {
 
   return (
     <DirtyContext.Provider value={dirty}>
-      <div className="min-h-svh md:grid md:grid-cols-[220px_1fr]">
+      <div className="min-h-svh md:grid md:grid-cols-[200px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)]">
         {/* mobile top bar */}
         <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-bg/95 px-4 py-3 backdrop-blur md:hidden">
           <span className="font-semibold">Admin</span>
@@ -73,19 +81,24 @@ export default function AdminShell({ children }) {
             type="button"
             onClick={() => setMenu((v) => !v)}
             aria-expanded={menu}
-            className="rounded-lg border border-line px-3 py-1.5 text-sm"
+            className="min-h-10 rounded-lg border border-line px-4 text-sm"
           >
             {menu ? "Close" : "Menu"}
           </button>
         </header>
 
         <aside
-          className={`${menu ? "flex" : "hidden"} flex-col gap-1 border-b border-line bg-bg p-3 md:sticky md:top-0 md:flex md:h-svh md:border-b-0 md:border-r md:p-4`}
+          className={`${menu ? "flex" : "hidden"} flex-col gap-1 border-b border-line bg-bg p-3 md:sticky md:top-0 md:flex md:h-svh md:overflow-y-auto md:border-b-0 md:border-r md:p-4`}
         >
           <p className="mb-3 hidden px-3 pt-2 font-semibold md:block">Admin</p>
           <nav className="flex flex-col gap-1">{links}</nav>
           <div className="mt-2 flex flex-col gap-1 border-t border-line pt-3 md:mt-auto">
-            <a href="/" target="_blank" rel="noreferrer" className="rounded-lg px-3 py-2.5 text-sm text-mute hover:text-ink">
+            <a
+              href="/"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg px-3 py-2.5 text-sm text-mute hover:text-ink"
+            >
               View site ↗
             </a>
             <button
@@ -101,7 +114,9 @@ export default function AdminShell({ children }) {
           </div>
         </aside>
 
-        <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 md:py-10">{children}</main>
+        <main className="mx-auto w-full min-w-0 max-w-3xl px-4 py-6 sm:px-6 md:py-10 lg:max-w-4xl xl:px-8 2xl:max-w-5xl">
+          {children}
+        </main>
       </div>
     </DirtyContext.Provider>
   );

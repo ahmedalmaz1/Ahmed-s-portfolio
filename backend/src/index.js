@@ -7,6 +7,7 @@ import adminProfile from './routes/admin/profile.js';
 import adminProjects from './routes/admin/projects.js';
 import adminSocial from './routes/admin/social.js';
 import auth from './routes/auth.js';
+import cv from './routes/cv.js';
 import media from './routes/media.js';
 import pub from './routes/public.js';
 
@@ -14,25 +15,29 @@ const app = new Hono();
 
 // Security header for every response.
 app.use('*', async (c, next) => {
-  await next();
-  c.header('X-Content-Type-Options', 'nosniff');
+	await next();
+	c.header('X-Content-Type-Options', 'nosniff');
 });
 
 // Allowed browser origins come from the ALLOWED_ORIGINS variable (comma separated, see wrangler.jsonc).
 app.use('*', (c, next) => {
-  const allowed = (c.env.ALLOWED_ORIGINS ?? '').split(',').map((origin) => origin.trim()).filter(Boolean);
-  return cors({
-    origin: (origin) => (allowed.includes(origin) ? origin : null),
-    allowMethods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Authorization', 'Content-Type'],
-    exposeHeaders: ['Content-Range', 'Accept-Ranges', 'ETag'],
-    maxAge: 86400,
-  })(c, next);
+	const allowed = (c.env.ALLOWED_ORIGINS ?? '')
+		.split(',')
+		.map((origin) => origin.trim())
+		.filter(Boolean);
+	return cors({
+		origin: (origin) => (allowed.includes(origin) ? origin : null),
+		allowMethods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+		allowHeaders: ['Authorization', 'Content-Type'],
+		exposeHeaders: ['Content-Range', 'Accept-Ranges', 'ETag'],
+		maxAge: 86400,
+	})(c, next);
 });
 
 // Public
 app.route('/', pub);
 app.route('/', media);
+app.route('/', cv);
 app.route('/', auth);
 
 // Admin: one guard in front of everything mounted under /admin
